@@ -12,6 +12,10 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/products', [ProductWebController::class, 'index'])->name('products.index');
 Route::get('/products/{slug}', [ProductWebController::class, 'show'])->name('products.show');
 
+// Static Pages
+Route::get('/about', function () { return view('about'); })->name('about');
+Route::get('/contact', function () { return view('contact'); })->name('contact');
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/cart', [CartWebController::class, 'index'])->name('cart.index');
     Route::post('/cart/add', [CartWebController::class, 'add'])->name('cart.add');
@@ -26,6 +30,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/orders', [OrderWebController::class, 'index'])->name('orders.index');
     Route::get('/orders/{id}', [OrderWebController::class, 'show'])->name('orders.show');
+    
+    // Order Actions
+    Route::post('/orders/{id}/cancel', [OrderWebController::class, 'cancel'])->name('orders.cancel');
+    Route::post('/orders/{id}/return', [OrderWebController::class, 'returnOrder'])->name('orders.return');
+    Route::get('/orders/{id}/invoice', [OrderWebController::class, 'downloadInvoice'])->name('orders.invoice');
     
     Route::get('/profile', function () { return view('profile.edit'); })->name('profile.edit');
 });
@@ -46,9 +55,34 @@ Route::prefix('admin')->name('admin.')->group(function () {
     
     Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [AdminWebController::class, 'dashboard'])->name('dashboard');
+        
+        // Products
         Route::get('/products', [AdminWebController::class, 'products'])->name('products.index');
+        Route::post('/products', [AdminWebController::class, 'storeProduct'])->name('products.store');
+        Route::put('/products/{id}', [AdminWebController::class, 'updateProduct'])->name('products.update');
+        Route::delete('/products/{id}', [AdminWebController::class, 'destroyProduct'])->name('products.destroy');
+        
+        // Categories
         Route::get('/categories', [AdminWebController::class, 'categories'])->name('categories.index');
+        Route::post('/categories', [AdminWebController::class, 'storeCategory'])->name('categories.store');
+        
+        // Orders
         Route::get('/orders', [AdminWebController::class, 'orders'])->name('orders.index');
+        Route::post('/orders/{id}/status', [AdminWebController::class, 'updateStatus'])->name('orders.status');
+        
+        // Users
         Route::get('/users', [AdminWebController::class, 'users'])->name('users.index');
+        Route::post('/users/{id}/suspend', [AdminWebController::class, 'suspendUser'])->name('users.suspend');
+        Route::delete('/users/{id}', [AdminWebController::class, 'destroyUser'])->name('users.destroy');
+
+        // Banners
+        Route::get('/banners', [AdminWebController::class, 'banners'])->name('banners.index');
+        Route::post('/banners', [AdminWebController::class, 'storeBanner'])->name('banners.store');
+        Route::delete('/banners/{id}', [AdminWebController::class, 'destroyBanner'])->name('banners.destroy');
+
+        // Discounts
+        Route::get('/discounts', [AdminWebController::class, 'discounts'])->name('discounts.index');
+        Route::post('/discounts/global', [AdminWebController::class, 'applyGlobalDiscount'])->name('discounts.global');
+        Route::post('/discounts/category', [AdminWebController::class, 'applyCategoryDiscount'])->name('discounts.category');
     });
 });

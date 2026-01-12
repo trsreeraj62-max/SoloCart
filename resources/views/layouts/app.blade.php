@@ -30,19 +30,59 @@
             <ul class="nav-menu">
                 <li><a href="{{ route('home') }}" class="nav-link">Home</a></li>
                 <li><a href="{{ route('products.index') }}" class="nav-link">Shop</a></li>
+                <li><a href="{{ route('about') }}" class="nav-link">About Us</a></li>
+                <li><a href="{{ route('contact') }}" class="nav-link">Contact</a></li>
                 
                 @auth
-                    <li><a href="{{ route('cart.index') }}" class="nav-link">Cart <span id="cart-count">({{ auth()->user()->cart?->items->sum('quantity') ?? 0 }})</span></a></li>
+                    <li>
+                        <a href="{{ route('cart.index') }}" class="nav-link" style="display: flex; align-items: center; position: relative; padding: 0.5rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                <path d="M16 10a4 4 0 0 1-8 0"></path>
+                            </svg>
+                            <span id="cart-count" style="position: absolute; top: -5px; right: -8px; background: var(--secondary); color: white; border-radius: 50%; height: 18px; min-width: 18px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold;">
+                                {{ auth()->user()->cart?->items->sum('quantity') ?? 0 }}
+                            </span>
+                        </a>
+                    </li>
                     
-                    <li class="nav-item">
-                        <a href="{{ route('profile.edit') }}">
+                    <li class="nav-item dropdown" id="userDropdown">
+                        <a href="#" onclick="toggleDropdown(event)" class="flex items-center gap-2">
                             @if(auth()->user()->profile_photo)
                                 <img src="{{ asset('storage/' . auth()->user()->profile_photo) }}" alt="Profile" class="profile-img">
                             @else
                                 <div class="profile-img" style="background: #ddd; display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden; color: #555;">{{ substr(auth()->user()->name, 0, 1) }}</div>
                             @endif
                         </a>
+                        <div class="dropdown-menu">
+                            <a href="{{ route('profile.edit') }}" class="dropdown-item">My Profile</a>
+                            <a href="{{ route('orders.index') }}" class="dropdown-item">My Orders</a>
+                            @if(auth()->user()->role === 'admin')
+                                <a href="{{ route('admin.dashboard') }}" class="dropdown-item">Admin Dashboard</a>
+                            @endif
+                            <div class="dropdown-divider"></div>
+                            <form action="{{ route('logout') }}" method="POST" style="margin: 0;">
+                                @csrf
+                                <button type="submit" class="dropdown-item text-danger">Logout</button>
+                            </form>
+                        </div>
                     </li>
+
+                    <script>
+                        function toggleDropdown(e) {
+                            e.preventDefault();
+                            document.querySelector('.dropdown').classList.toggle('active');
+                        }
+
+                        // Close dropdown when clicking outside
+                        document.addEventListener('click', function(e) {
+                            const dropdown = document.querySelector('.dropdown');
+                            if (dropdown && !dropdown.contains(e.target)) {
+                                dropdown.classList.remove('active');
+                            }
+                        });
+                    </script>
                     @if(auth()->user()->role === 'admin')
                          <li><a href="{{ route('admin.dashboard') }}" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Admin</a></li>
                     @endif

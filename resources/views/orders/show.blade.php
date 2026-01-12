@@ -51,18 +51,30 @@
                  @php
                     $statuses = ['pending', 'approved', 'packed', 'shipped', 'out_for_delivery', 'delivered'];
                     $currentStatus = $order->status;
-                    if ($currentStatus == 'cancelled') {
-                        echo '<div style="color: red; font-weight: bold; text-align: center; border: 2px solid red; padding: 1rem; border-radius: 8px;">Order Cancelled</div>';
-                    } elseif ($currentStatus == 'returned') {
-                        echo '<div style="color: orange; font-weight: bold; text-align: center; border: 2px solid orange; padding: 1rem; border-radius: 8px;">Order Returned</div>';
+                    $isCancelled = $currentStatus === 'cancelled';
+                    $isReturned = $currentStatus === 'returned';
+                    
+                    if ($isCancelled) {
+                        echo '<div style="background: #fee2e2; color: #b91c1c; font-weight: bold; text-align: center; border: 1px solid #fecaca; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">Current Status: Cancelled</div>';
+                    } elseif ($isReturned) {
+                         echo '<div style="background: #ffedd5; color: #c2410c; font-weight: bold; text-align: center; border: 1px solid #fed7aa; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">Current Status: Returned</div>';
                     } else {
                         $currentIndex = array_search($currentStatus, $statuses);
-                        if ($currentIndex === false) $currentIndex = -1;
+                        if ($currentIndex === false) $currentIndex = 0;
+                        if ($currentStatus == 'return_requested') $currentIndex = 5; // Treat as delivered visually + message
                  @endphp
                  
+                 <!-- Tracking Map Placeholder -->
+                 @if(!$isCancelled && !$isReturned && $currentIndex >= 3)
+                 <div class="mb-4" style="border-radius: 16px; overflow: hidden; border: 1px solid var(--border);">
+                     <img src="https://media.wired.com/photos/59269cd37034dc5f91becd32/master/w_2560%2Cc_limit/GoogleMapTA.jpg" alt="Tracking Map" style="width: 100%; height: 200px; object-fit: cover;">
+                     <div class="p-2 bg-light text-center text-sm text-muted">Live Tracking (Demo)</div>
+                 </div>
+                 @endif
+
                  <div class="timeline">
                      @foreach($statuses as $index => $status)
-                        <div class="timeline-item {{ $index <= $currentIndex ? 'completed' : '' }}">
+                        <div class="timeline-item {{ (!$isCancelled && !$isReturned && $index <= $currentIndex) ? 'completed' : '' }}">
                             <div class="timeline-dot"></div>
                             <div class="timeline-text">{{ ucwords(str_replace('_', ' ', $status)) }}</div>
                             @if($index == $currentIndex)
@@ -82,6 +94,25 @@
                 <div class="mt-4 pt-4 border-t text-sm text-muted">
                     Payment Method: <span class="font-bold">{{ strtoupper($order->payment_method) }}</span>
                 </div>
+                
+                <!-- Order Actions -->
+               <div class="mt-6 pt-4 border-t flex flex-col gap-2">
+                   @if(in_array($order->status, ['pending', 'approved', 'packed']))
+                       <form action="{{ route('orders.cancel', $order->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this order?')">
+                           @csrf
+                           <button type="submit" class="btn btn-outline text-danger w-100 justify-center" style="border-color: #ef4444; color: #ef4444; width: 100%;">Cancel Order</button>
+                       </form>
+                   @endif
+                   
+                   @if($order->status == 'delivered')
+                       <a href="{{ route('orders.invoice', $order->id) }}" class="btn btn-primary w-100 justify-center" style="width: 100%; text-align: center;">Download Invoice</a>
+                       
+                       <form action="{{ route('orders.return', $order->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to return this order?')">
+                           @csrf
+                           <button type="submit" class="btn btn-outline w-100 justify-center mt-2" style="width: 100%;">Return Order</button>
+                       </form>
+                   @endif
+               </div>
             </div>
         </div>
 
