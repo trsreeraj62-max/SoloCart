@@ -66,4 +66,49 @@ class ProductController extends ApiController
 
         return $this->success($similar, "Similar products retrieved");
     }
+
+    /**
+     * Admin: Store product
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required',
+            'category_id' => 'required|exists:categories,id',
+            'price' => 'required|numeric',
+            'stock' => 'required|integer',
+        ]);
+
+        $data = $request->all();
+        $data['slug'] = \Illuminate\Support\Str::slug($request->name) . '-' . rand(100, 999);
+        $product = Product::create($data);
+
+        return $this->success($product, "Product created", 201);
+    }
+
+    /**
+     * Admin: Update product
+     */
+    public function update(Request $request, $id)
+    {
+        $product = Product::find($id);
+        if (!$product) return $this->error("Product not found", 404);
+
+        $product->update($request->all());
+
+        return $this->success($product, "Product updated");
+    }
+
+    /**
+     * Admin: Delete product
+     */
+    public function destroy($id)
+    {
+        $product = Product::find($id);
+        if (!$product) return $this->error("Product not found", 404);
+
+        $product->delete();
+
+        return $this->success([], "Product deleted");
+    }
 }

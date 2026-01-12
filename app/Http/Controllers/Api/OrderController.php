@@ -60,6 +60,44 @@ class OrderController extends ApiController
     }
 
     /**
+     * Return order
+     */
+    public function returnOrder($id)
+    {
+        $order = Auth::user()->orders()->find($id);
+        if (!$order) return $this->error("Order not found", 404);
+        if ($order->status != 'delivered') return $this->error("Only delivered orders can be returned");
+
+        $this->orderService->updateStatus($order, 'returned');
+        return $this->success([], "Return initiated successfully");
+    }
+
+    /**
+     * Download invoice
+     */
+    public function downloadInvoice($id)
+    {
+        $order = Auth::user()->orders()->with(['items.product', 'user'])->find($id);
+        if (!$order) return $this->error("Order not found", 404);
+        if ($order->status != 'delivered') return $this->error("Invoice available for delivered orders only");
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', compact('order'));
+        return $pdf->download('invoice_'.$order->id.'.pdf');
+    }
+
+    /**
+     * Admin: List all orders
+     */
+    public function adminIndex(Request $request)
+    {
+        $query = Order::with(['user', 'items.product'])->latest();
+        if ($request->filled('status')) $query->where('status', $request->status);
+        
+        $orders = $query->paginate(20);
+        return $this->success($orders, "Admin orders retrieved");
+    }
+
+    /**
      * Admin: Update status
      */
     public function updateStatus(Request $request, $id)

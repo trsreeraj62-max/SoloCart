@@ -3,7 +3,6 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\OTPController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\BannerController;
@@ -60,5 +59,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/admin/products', [ProductController::class, 'store']);
         Route::put('/admin/products/{id}', [ProductController::class, 'update']);
         Route::delete('/admin/products/{id}', [ProductController::class, 'destroy']);
+
+        // Discounts
+        Route::post('/admin/discounts/global', [\App\Http\Controllers\Api\DiscountController::class, 'applyGlobal']);
+        Route::post('/admin/discounts/category', [\App\Http\Controllers\Api\DiscountController::class, 'applyCategory']);
     });
 });
