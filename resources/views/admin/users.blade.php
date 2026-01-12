@@ -1,9 +1,15 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="mb-6">
-    <h1 class="font-bold text-2xl text-slate-800">User Management</h1>
-    <p class="text-slate-500">Manage user accounts and access</p>
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h1 class="font-bold text-2xl text-slate-800">User Management</h1>
+        <p class="text-slate-500">Manage user accounts and access</p>
+    </div>
+    <form action="{{ route('admin.users.index') }}" method="GET" class="relative">
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search users..." class="pl-9 pr-4 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+        <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+    </form>
 </div>
 
 @if(session('success'))

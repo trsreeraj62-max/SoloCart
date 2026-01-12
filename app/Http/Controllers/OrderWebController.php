@@ -4,21 +4,28 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\Product;
-use App\Models\Cart;
+use App\Models\CartItem;
+use App\Services\OrderService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OrderWebController extends Controller
 {
+    protected $orderService;
+
+    public function __construct(OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
+
     public function index()
     {
         try {
-            $orders = Auth::user()->orders()->latest()->get();
+            $orders = Auth::user()->orders()->with('items.product')->latest()->get();
             return view('orders.index', compact('orders'));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Order Index Error: ' . $e->getMessage());
+            Log::error('Order Index Error: ' . $e->getMessage());
             return back()->with('error', 'Failed to load orders.');
         }
     }
@@ -26,10 +33,10 @@ class OrderWebController extends Controller
     public function show($id)
     {
         try {
-            $order = Auth::user()->orders()->with('items.product')->findOrFail($id);
+            $order = Auth::user()->orders()->with(['items.product', 'user'])->findOrFail($id);
             return view('orders.show', compact('order'));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Order Show Error: ' . $e->getMessage());
+            Log::error('Order Show Error: ' . $e->getMessage());
             return redirect()->route('orders.index')->with('error', 'Order not found.');
         }
     }
@@ -39,7 +46,7 @@ class OrderWebController extends Controller
         try {
             $user = Auth::user();
             $items = [];
-            $total = 0;
+            $subtotal = 0;
             $isSingle = false;
             $singleProductId = null;
             $singleQuantity = 1;
@@ -54,10 +61,22 @@ class OrderWebController extends Controller
                     'quantity' => $qty,
                     'price' => $price
                 ];
-                $total = $price * $qty;
+                $subtotal = $price * $qty;
                 $isSingle = true;
                 $singleProductId = $product->id;
                 $singleQuantity = $qty;
+            } elseif ($request->has('buy_item')) {
+                $cartItem = CartItem::with('product')->findOrFail($request->buy_item);
+                $price = $cartItem->product->price - ($cartItem->product->price * ($cartItem->product->discount_percent / 100));
+                $items[] = (object) [
+                    'product' => $cartItem->product,
+                    'quantity' => $cartItem->quantity,
+                    'price' => $price
+                ];
+                $subtotal = $price * $cartItem->quantity;
+                $isSingle = true;
+                $singleProductId = $cartItem->product_id;
+                $singleQuantity = $cartItem->quantity;
             } else {
                 $cart = $user->cart()->with('items.product')->first();
                 if (!$cart || $cart->items->count() == 0) {
@@ -70,78 +89,78 @@ class OrderWebController extends Controller
                         'quantity' => $item->quantity,
                         'price' => $price
                     ];
-                    $total += $price * $item->quantity;
+                    $subtotal += $price * $item->quantity;
                 }
             }
             
-            $platformFee = 10;
-            $grandTotal = $total + $platformFee;
-    
-            return view('checkout.index', compact('items', 'total', 'platformFee', 'grandTotal', 'user', 'isSingle', 'singleProductId', 'singleQuantity'));
+            $fees = $this->orderService->calculateFees($subtotal);
+            
+            return view('checkout.index', array_merge($fees, [
+                'items' => $items,
+                'user' => $user,
+                'isSingle' => $isSingle,
+                'singleProductId' => $singleProductId,
+                'singleQuantity' => $singleQuantity
+            ]));
+
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Checkout Error: ' . $e->getMessage());
+            Log::error('Checkout Error: ' . $e->getMessage());
             return back()->with('error', 'Failed to load checkout page.');
         }
     }
     
-    public function store(Request $request) {
+    public function store(Request $request) 
+    {
         $request->validate([
              'address' => 'required',
-             'payment_method' => 'required|in:cod,upi,card'
+             'payment_method' => 'required|in:cod,upi,card,pending'
         ]);
         
-        DB::beginTransaction();
         try {
-            $total = $request->grand_total; // trusting frontend for now, in prod recalculate
-            
-            $order = Order::create([
-                'user_id' => Auth::id(),
-                'status' => 'pending',
-                'address' => $request->address,
-                'payment_method' => $request->payment_method,
-                'payment_status' => 'pending',
-                'total' => $total
-            ]);
-            
-            // Items
+            $user = Auth::user();
+            $itemsData = [];
+            $subtotal = 0;
+            $clearCart = false;
+
             if ($request->has('product_id') && $request->product_id) {
-                 $product = Product::findOrFail($request->product_id);
-                 $price = $product->price - ($product->price * ($product->discount_percent / 100));
-                 OrderItem::create([
-                     'order_id' => $order->id,
-                     'product_id' => $product->id,
-                     'quantity' => $request->quantity ?? 1,
-                     'price' => $price
-                 ]);
-                 // Decrease stock
-                 $product->decrement('stock', $request->quantity ?? 1);
+                $product = Product::findOrFail($request->product_id);
+                $price = $product->price - ($product->price * ($product->discount_percent / 100));
+                $qty = $request->quantity ?? 1;
+                $itemsData[] = [
+                    'product_id' => $product->id,
+                    'quantity' => $qty,
+                    'price' => $price
+                ];
+                $subtotal = $price * $qty;
             } else {
-                $cart = Auth::user()->cart;
+                $cart = $user->cart;
                 foreach($cart->items as $item) {
-                     $price = $item->product->price - ($item->product->price * ($item->product->discount_percent / 100));
-                     OrderItem::create([
-                         'order_id' => $order->id,
-                         'product_id' => $item->product_id,
-                         'quantity' => $item->quantity,
-                         'price' => $price
-                     ]);
-                     $item->product->decrement('stock', $item->quantity);
+                    $price = $item->product->price - ($item->product->price * ($item->product->discount_percent / 100));
+                    $itemsData[] = [
+                        'product_id' => $item->product_id,
+                        'quantity' => $item->quantity,
+                        'price' => $price
+                    ];
+                    $subtotal += $price * $item->quantity;
                 }
-                // Clear cart
-                $cart->items()->delete();
+                $clearCart = true;
             }
             
-            DB::commit();
+            $order = $this->orderService->createOrder($user, [
+                'subtotal' => $subtotal,
+                'address' => $request->address,
+                'payment_method' => $request->payment_method,
+                'clear_cart' => $clearCart
+            ], $itemsData);
             
-            if ($request->payment_method == 'cod') {
-                $order->update(['status' => 'approved']); // Auto approve COD for now
+            if ($order->payment_method == 'cod') {
                 return redirect()->route('orders.show', $order->id)->with('success', 'Order Placed Successfully!');
             }
             
             return redirect()->route('checkout.pay', $order->id);
             
         } catch (\Exception $e) {
-            DB::rollback();
+            Log::error('Order Store Error: ' . $e->getMessage());
             return back()->with('error', 'Order failed: ' . $e->getMessage());
         }
     }
@@ -153,27 +172,32 @@ class OrderWebController extends Controller
             
             return view('checkout.payment', compact('order'));
         } catch (\Exception $e) {
-             \Illuminate\Support\Facades\Log::error('Payment Page Error: ' . $e->getMessage());
+             Log::error('Payment Page Error: ' . $e->getMessage());
              return redirect()->route('orders.index')->with('error', 'Unable to load payment page.');
         }
     }
 
     public function confirmPayment(Request $request, $id) {
         try {
-            $order = Auth::user()->orders()->findOrFail($id);
-            $order->update(['status' => 'approved', 'payment_status' => 'paid']);
-            // Create Payment Record
+            $order = Auth::user()->orders()->with('items.product')->findOrFail($id);
+            
+            // In a real app, verify transaction with gateway here
+            // Verify transaction and update
+            $this->orderService->updateStatus($order, 'approved');
+            $order->update(['payment_status' => 'paid', 'payment_method' => $request->input('payment_method', 'upi')]);
+            
             \App\Models\Payment::create([
                 'order_id' => $order->id,
                 'amount' => $order->total,
-                'method' => $order->payment_method,
+                'method' => $request->input('payment_method', 'upi'),
                 'status' => 'success',
                 'transaction_id' => 'TXN' . rand(100000, 999999)
             ]);
-            
-            return redirect()->route('orders.show', $id)->with('success', 'Payment Successful! Order Placed.');
+
+            // Notification is handled in a more centralized way or here if specialized
+            return view('checkout.success', compact('order'));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Payment Confirm Error: ' . $e->getMessage());
+            Log::error('Payment Confirm Error: ' . $e->getMessage());
             return back()->with('error', 'Payment confirmation failed.');
         }
     }
@@ -182,18 +206,19 @@ class OrderWebController extends Controller
     {
         try {
             $order = Auth::user()->orders()->findOrFail($id);
-            // Allow cancel if not yet shipped
             if (in_array($order->status, ['pending', 'approved', 'packed'])) {
-                $order->update(['status' => 'cancelled']);
-                // Restore stock logic could go here
+                $this->orderService->updateStatus($order, 'cancelled');
+                
+                // Restore stock
                 foreach($order->items as $item) {
                     $item->product->increment('stock', $item->quantity);
                 }
+                
                 return back()->with('success', 'Order has been cancelled.');
             }
-            return back()->with('error', 'Order cannot be cancelled at this stage. It might be shipped or delivered.');
+            return back()->with('error', 'Order cannot be cancelled at this stage.');
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Order Cancel Error: ' . $e->getMessage());
+            Log::error('Order Cancel Error: ' . $e->getMessage());
             return back()->with('error', 'Failed to cancel order.');
         }
     }
@@ -203,12 +228,12 @@ class OrderWebController extends Controller
         try {
             $order = Auth::user()->orders()->findOrFail($id);
             if ($order->status == 'delivered') {
-                $order->update(['status' => 'returned']);
-                 return back()->with('success', 'Return request initiated.');
+                $this->orderService->updateStatus($order, 'returned');
+                return back()->with('success', 'Return request initiated.');
             }
             return back()->with('error', 'Order cannot be returned.');
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Order Return Error: ' . $e->getMessage());
+            Log::error('Order Return Error: ' . $e->getMessage());
             return back()->with('error', 'Failed to submit return request.');
         }
     }
@@ -216,28 +241,18 @@ class OrderWebController extends Controller
     public function downloadInvoice($id)
     {
         try {
-            $order = Auth::user()->orders()->findOrFail($id);
+            $order = Auth::user()->orders()->with(['items.product', 'user'])->findOrFail($id);
+            
             if ($order->status != 'delivered') {
                  return back()->with('error', 'Invoice allowed only for delivered orders.');
             }
             
-            // Generate a simple text-based invoice for now
-            $content = "SOLOCART INVOICE\n";
-            $content .= "Order ID: " . $order->id . "\n";
-            $content .= "Date: " . $order->created_at . "\n";
-            $content .= "Address: " . $order->address . "\n\n";
-            $content .= "Items:\n";
-            foreach($order->items as $item) {
-                $content .= $item->product->name . " x " . $item->quantity . " - $" . ($item->price * $item->quantity) . "\n";
-            }
-            $content .= "\nTOTAL: $" . $order->total . "\n";
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', compact('order'));
             
-            return response($content, 200, [
-                'Content-Type' => 'text/plain',
-                'Content-Disposition' => 'attachment; filename="invoice_'.$order->id.'.txt"',
-            ]);
+            return $pdf->download('invoice_'.$order->id.'.pdf');
+            
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Invoice Error: ' . $e->getMessage());
+            Log::error('Invoice Download Error: ' . $e->getMessage());
             return back()->with('error', 'Failed to generate invoice.');
         }
     }

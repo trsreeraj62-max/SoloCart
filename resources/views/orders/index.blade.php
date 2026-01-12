@@ -24,7 +24,12 @@
                     <span class="font-bold text-lg block">${{ number_format($order->total, 2) }}</span>
                     <small class="text-muted">{{ strtoupper($order->payment_method) }}</small>
                 </div>
-                <div>
+                <div class="flex items-center gap-2">
+                    @if($order->status == 'delivered')
+                        <a href="{{ route('orders.invoice', $order->id) }}" class="btn btn-primary" title="Download Invoice" style="padding: 0.5rem 1.25rem;">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    @endif
                     <a href="{{ route('orders.show', $order->id) }}" class="btn btn-outline" style="padding: 0.5rem 1.5rem;">View</a>
                 </div>
             </div>

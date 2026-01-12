@@ -10,7 +10,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class InvoiceMail extends Mailable
+class OrderConfirmationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -30,7 +30,7 @@ class InvoiceMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Invoice for Order #' . $this->order->id,
+            subject: 'Order Confirmation - SoloCart #' . $this->order->id,
         );
     }
 
@@ -40,22 +40,17 @@ class InvoiceMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.invoice',
+            markdown: 'emails.order_confirmation',
         );
     }
 
     /**
      * Get the attachments for the message.
+     *
+     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
      */
     public function attachments(): array
     {
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', ['order' => $this->order]);
-        
-        return [
-            \Illuminate\Mail\Mailables\Attachment::fromData(
-                fn () => $pdf->output(),
-                'invoice_' . $this->order->id . '.pdf'
-            )->withMime('application/pdf'),
-        ];
+        return [];
     }
 }

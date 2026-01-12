@@ -1,0 +1,13 @@
+/vendor
+/node_modules
+/storage/*.key
+.env
+.git
+.github
+Dockerfile
+.dockerignore
+composer.lock
+package-lock.json
+public/storage
+storage/logs/*.log
+tests

@@ -13,14 +13,27 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use App\Mail\OrderStatusMail;
+use App\Mail\InvoiceMail;
+
+use App\Services\OrderService;
 
 class AdminWebController extends Controller
 {
+    protected $orderService;
+
+    public function __construct(OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
+
     public function dashboard()
     {
         try {
             $stats = [
-                'daily_revenue' => Order::whereDate('created_at', today())->sum('total'),
+                'daily_revenue' => Order::whereDate('created_at', today())->where('status', '!=', 'cancelled')->sum('total'),
+                'monthly_revenue' => Order::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('status', '!=', 'cancelled')->sum('total'),
+                'yearly_revenue' => Order::whereYear('created_at', now()->year)->where('status', '!=', 'cancelled')->sum('total'),
                 'orders_count' => Order::count(),
                 'products_count' => Product::count(),
                 'users_count' => User::count(),
@@ -30,11 +43,13 @@ class AdminWebController extends Controller
                 DB::raw('DATE(created_at) as date'),
                 DB::raw('SUM(total) as revenue')
             )
+            ->where('status', '!=', 'cancelled')
             ->groupBy('date')
-            ->orderBy('date', 'asc')
-            ->take(7)
-            ->get();
-    
+            ->orderBy('date', 'desc')
+            ->take(30) // Get more data points for the graph
+            ->get()
+            ->reverse(); // Show chronological order
+
             return view('admin.dashboard', compact('stats', 'revenueData'));
         } catch (\Exception $e) {
             Log::error('Admin Dashboard Error: ' . $e->getMessage());
@@ -42,10 +57,17 @@ class AdminWebController extends Controller
         }
     }
 
-    public function products()
+    public function products(Request $request)
     {
         try {
-            $products = Product::with('category')->latest()->paginate(20);
+            $query = Product::with('category')->latest();
+            if ($request->filled('search')) {
+                $query->where('name', 'like', '%' . $request->search . '%');
+            }
+            if ($request->filled('category_id')) {
+                $query->where('category_id', $request->category_id);
+            }
+            $products = $query->paginate(20);
             $categories = Category::all();
             return view('admin.products', compact('products', 'categories'));
         } catch (\Exception $e) {
@@ -91,6 +113,17 @@ class AdminWebController extends Controller
         }
     }
 
+    // ... (updateProduct and destroyProduct remain same) ...
+    // Note: I cannot skip lines inside replacement.
+    // I must include updateProduct and destroyProduct content here or break it into chunks.
+    // I will break it into chunks. This call will ONLY fix the garbage before storeProduct and storeProduct itself.
+    // Wait, the API tool says "If you are making a single contiguous block of edits... use replace_file_content".
+    // I want to replace from line 64 to 113.
+    // But I also want to replace orders (152) and users (186).
+    // I will use multi_replace? Yes, "Use this tool ONLY when you are making MULTIPLE, NON-CONTIGUOUS edits".
+    // Perfect.
+    
+
     public function updateProduct(Request $request, $id)
     {
         try {
@@ -129,10 +162,14 @@ class AdminWebController extends Controller
         }
     }
 
-    public function orders()
+    public function orders(Request $request)
     {
         try {
-           $orders = Order::with('user')->latest()->paginate(20);
+           $query = Order::with('user')->latest();
+           if($request->filled('search')) {
+               $query->where('id', 'like', '%'.$request->search.'%');
+           }
+           $orders = $query->paginate(20);
            return view('admin.orders', compact('orders'));
         } catch (\Exception $e) {
              Log::error('Admin Orders Error: ' . $e->getMessage());
@@ -145,28 +182,25 @@ class AdminWebController extends Controller
         try {
             $request->validate(['status' => 'required|in:pending,approved,packed,shipped,out_for_delivery,delivered,cancelled,returned']);
             
-            $order = Order::with('user', 'items.product')->findOrFail($id);
-            $oldStatus = $order->status;
-            $newStatus = $request->status;
+            $order = Order::findOrFail($id);
+            $this->orderService->updateStatus($order, $request->status);
             
-            $order->update(['status' => $newStatus]);
-            
-            // If Delivered, Send Invoice Email
-            if ($newStatus === 'delivered' && $oldStatus !== 'delivered') {
-                Mail::to($order->user->email)->send(new \App\Mail\InvoiceMail($order));
-            }
-            
-            return back()->with('success', 'Order status updated to ' . $newStatus);
+            return back()->with('success', 'Order status updated to ' . $request->status);
         } catch (\Exception $e) {
             Log::error('Admin Order Update Error: ' . $e->getMessage());
             return back()->with('error', 'Failed to update status.');
         }
     }
 
-    public function users()
+    public function users(Request $request)
     {
         try {
-            $users = User::latest()->paginate(20);
+            $query = User::latest();
+            if($request->filled('search')) {
+                $query->where('name', 'like', '%'.$request->search.'%')
+                      ->orWhere('email', 'like', '%'.$request->search.'%');
+            }
+            $users = $query->paginate(20);
             return view('admin.users', compact('users'));
         } catch (\Exception $e) {
              Log::error('Admin Users Error: ' . $e->getMessage());
@@ -218,9 +252,13 @@ class AdminWebController extends Controller
     }
 
     // Banners
-    public function banners()
+    public function banners(Request $request)
     {
-        $banners = Banner::all();
+        $query = Banner::query();
+        if($request->filled('search')) {
+            $query->where('title', 'like', '%'.$request->search.'%');
+        }
+        $banners = $query->get();
         return view('admin.banners', compact('banners'));
     }
 
@@ -248,6 +286,32 @@ class AdminWebController extends Controller
             return back()->with('success', 'Banner created.');
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to create banner: ' . $e->getMessage());
+        }
+    }
+
+    public function updateBanner(Request $request, $id)
+    {
+        try {
+            $banner = Banner::findOrFail($id);
+             $request->validate([
+                'title' => 'required',
+                'type' => 'required|in:hero,promo',
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date'
+            ]);
+            
+            $data = $request->except(['image', '_token', '_method']);
+            
+             if ($request->hasFile('image')) {
+                 $request->validate(['image' => 'image']);
+                 $path = $request->file('image')->store('banners', 'public');
+                 $data['image_path'] = $path;
+             }
+             
+             $banner->update($data);
+             return back()->with('success', 'Banner updated.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to update banner: ' . $e->getMessage());
         }
     }
 

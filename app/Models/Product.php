@@ -17,7 +17,18 @@ class Product extends Model
         'price',
         'stock',
         'discount_percent',
+        'discount_start_date',
+        'discount_end_date',
+        'specifications'
     ];
+
+    /**
+     * Scope for active products (could be status based, but here we just check stock)
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('stock', '>', 0);
+    }
 
     public function category()
     {
@@ -36,6 +47,6 @@ class Product extends Model
 
     public function cartItems()
     {
-        return $this->hasMany(CartItem::class); // Optional but good for queries
+        return $this->hasMany(CartItem::class);
     }
 }

@@ -20,18 +20,20 @@
             <div class="flex items-center">
                 <a href="{{ route('home') }}" class="nav-logo">SoloCart.</a>
                 
+                @if(!request()->routeIs('home') && !request()->routeIs('products.index'))
                 <div class="search-bar-container">
                     <form action="{{ route('products.index') }}" method="GET">
                         <input type="text" name="search" class="search-input" placeholder="Search products..." value="{{ request('search') }}">
                     </form>
                 </div>
+                @endif
             </div>
 
             <ul class="nav-menu">
-                <li><a href="{{ route('home') }}" class="nav-link">Home</a></li>
-                <li><a href="{{ route('products.index') }}" class="nav-link">Shop</a></li>
-                <li><a href="{{ route('about') }}" class="nav-link">About Us</a></li>
-                <li><a href="{{ route('contact') }}" class="nav-link">Contact</a></li>
+                <li><a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">Home</a></li>
+                <li><a href="{{ route('products.index') }}" class="nav-link {{ request()->routeIs('products.index') ? 'active' : '' }}">Shop</a></li>
+                <li><a href="{{ route('about') }}" class="nav-link {{ request()->routeIs('about') ? 'active' : '' }}">About</a></li>
+                <li><a href="{{ route('contact') }}" class="nav-link {{ request()->routeIs('contact') ? 'active' : '' }}">Contact</a></li>
                 
                 @auth
                     <li>
@@ -96,6 +98,21 @@
 
     <!-- Main Content -->
     <main style="min-height: 80vh; padding-bottom: 4rem;">
+        <div class="container mt-4">
+            @if(session('success'))
+                <div class="mb-4 p-3 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/10 flex items-center gap-3 animate-in fade-in duration-300 max-w-fit">
+                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-xs"><i class="fas fa-check"></i></div>
+                    <p class="font-bold text-sm m-0">{{ session('success') }}</p>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-4 p-3 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/10 flex items-center gap-3 animate-in fade-in duration-300 max-w-fit">
+                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-xs"><i class="fas fa-times"></i></div>
+                    <p class="font-bold text-sm m-0">{{ session('error') }}</p>
+                </div>
+            @endif
+        </div>
         @yield('content')
     </main>
 

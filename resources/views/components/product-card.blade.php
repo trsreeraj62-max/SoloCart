@@ -1,37 +1,40 @@
-<div class="card">
-    <div class="product-card-img">
-        <a href="{{ route('products.show', $product->slug ?? $product->id) }}">
+<a href="{{ route('products.show', $product->slug ?? $product->id) }}" class="card block hover:shadow-xl transition-all duration-500 no-underline text-inherit group overflow-hidden bg-white" style="border-radius: 24px; border: 1px solid #f8fafc; height: 320px;">
+    <div class="product-card-img relative bg-slate-50/30 overflow-hidden" style="height: 200px;">
+        <div class="flex items-center justify-center h-full w-full p-6">
             @if($product->images && $product->images->first())
-                <img src="{{ asset('storage/' . $product->images->first()->image_path) }}" alt="{{ $product->name }}">
+                <img src="{{ asset('storage/' . $product->images->first()->image_path) }}" alt="{{ $product->name }}" class="w-full h-full object-contain group-hover:scale-110 transition duration-700">
             @else
-                <img src="https://placehold.co/400x300?text=No+Image" alt="Placeholder">
+                <img src="https://placehold.co/400x300?text=Premium+Item" alt="Placeholder" class="w-full h-full object-contain opacity-20">
             @endif
-        </a>
+        </div>
+        
+        <div class="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition duration-500"></div>
+
         @if($product->discount_percent > 0)
-            <span class="discount-badge">-{{ $product->discount_percent }}%</span>
+            <span class="absolute top-4 left-4 bg-red-500 text-white text-[9px] font-black px-3 py-1 rounded-full shadow-lg tracking-widest uppercase">
+                Save {{ $product->discount_percent }}%
+            </span>
         @endif
-    </div>
-    <div class="product-info">
-        <h3 class="font-bold text-lg mb-2" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-            <a href="{{ route('products.show', $product->slug ?? $product->id) }}">{{ $product->name }}</a>
-        </h3>
-        <p class="text-muted text-sm mb-2">{{ Str::limit($product->description, 50) }}</p>
-        <div class="product-meta">
-            <span class="product-price">${{ number_format($product->price - ($product->price * ($product->discount_percent / 100)), 2) }}</span>
-            @if($product->discount_percent > 0)
-                <span class="text-muted" style="text-decoration: line-through; font-size: 0.9rem; margin-left: 5px;">${{ number_format($product->price, 2) }}</span>
-            @endif
-            
-            <form action="{{ route('cart.add') }}" method="POST">
-                @csrf
-                <input type="hidden" name="product_id" value="{{ $product->id }}">
-                <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Add
-                </button>
-            </form>
+        
+        <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-500">
+            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-xl text-primary">
+                <i class="fas fa-plus"></i>
+            </div>
         </div>
     </div>
-</div>
+    
+    <div class="product-info p-6 text-center space-y-2">
+        <h3 class="font-extrabold text-slate-800 text-base leading-tight group-hover:text-primary transition line-clamp-1">
+            {{ $product->name }}
+        </h3>
+        
+        <div class="flex flex-col items-center justify-center gap-0.5">
+             <div class="text-xl font-black text-slate-900 tracking-tighter">
+                ${{ number_format($product->price * (1 - ($product->discount_percent/100)), 2) }}
+             </div>
+             @if($product->discount_percent > 0)
+                <span class="text-[10px] text-slate-300 line-through font-bold">${{ number_format($product->price, 2) }}</span>
+             @endif
+        </div>
+    </div>
+</a>

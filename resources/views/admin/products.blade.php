@@ -2,14 +2,28 @@
 
 @section('content')
 
-<div class="flex justify-between items-center mb-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center mb-6">
     <div>
         <h1 class="font-bold text-2xl text-slate-800">Products</h1>
         <p class="text-slate-500">Manage your store inventory</p>
     </div>
-    <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow transition flex items-center gap-2" onclick="openAddModal()">
-        <i class="fas fa-plus"></i> Add Product
-    </button>
+    <div class="flex gap-2 justify-end">
+        <form action="{{ route('admin.products.index') }}" method="GET" class="flex gap-2 w-full md:w-auto">
+            <select name="category_id" class="border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-sm" onchange="this.form.submit()">
+                <option value="">All Categories</option>
+                @foreach($categories as $category)
+                    <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                @endforeach
+            </select>
+            <div class="relative">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search products..." class="pl-9 pr-4 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                <i class="fas fa-search absolute left-3 top-2.5 text-slate-400"></i>
+            </div>
+        </form>
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-2 whitespace-nowrap" onclick="openAddModal()">
+            <i class="fas fa-plus"></i> Add
+        </button>
+    </div>
 </div>
 
 @if(session('success'))
@@ -79,12 +93,14 @@
                     </td>
                     <td class="p-4 text-right">
                         <div class="flex items-center justify-end gap-2">
-                             <!-- Simple JS Edit (Pass ID only for now, ideally populate details) -->
-                            <button class="text-slate-400 hover:text-blue-600 transition" title="Edit">
+                             <!-- Edit Button with Data Attribute -->
+                            <button class="text-slate-400 hover:text-blue-600 transition" title="Edit" 
+                                    onclick="editProduct(this)" 
+                                    data-product='{{ json_encode($product) }}'>
                                 <i class="fas fa-edit"></i>
                             </button>
                             
-                            <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                            <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Delete this product?');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-slate-400 hover:text-red-600 transition" title="Delete">
@@ -103,16 +119,17 @@
     </div>
 </div>
 
-<!-- Add Product Modal -->
+<!-- Product Modal (Add & Edit) -->
 <div id="addProductModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
-            <h3 class="text-xl font-bold text-slate-800">Add New Product</h3>
+            <h3 id="modalTitle" class="text-xl font-bold text-slate-800">Add New Product</h3>
             <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
         </div>
         
-        <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" class="p-6">
+        <form id="productForm" action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" class="p-6">
             @csrf
+            <div id="methodFieldContainer"></div> <!-- For PUT method input -->
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <!-- Basic Info -->
@@ -147,7 +164,7 @@
                 <div>
                      <label class="block text-sm font-bold text-slate-700 mb-1">Product Image</label>
                      <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition cursor-pointer relative" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
-                         <input type="file" name="image" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="previewImage(event)" required>
+                         <input type="file" name="image" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="previewImage(event)">
                          <div id="placeholderText">
                              <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2"></i>
                              <p class="text-sm text-slate-500">Click to upload image</p>
@@ -164,8 +181,8 @@
                     <textarea name="description" rows="3" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Specifications (JSON or Text)</label>
-                    <textarea name="specifications" rows="3" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Box Content: Charger, Manual..."></textarea>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Specifications</label>
+                    <textarea name="specifications" rows="3" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Details..."></textarea>
                 </div>
             </div>
 
@@ -178,12 +195,12 @@
                         <input type="number" name="discount_percent" min="0" max="100" class="w-full border border-blue-200 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-blue-700 mb-1">Start Date</label>
-                        <input type="date" name="discount_start_date" class="w-full border border-blue-200 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label class="block text-xs font-bold text-blue-700 mb-1">Start Date & Time</label>
+                        <input type="datetime-local" name="discount_start_date" class="w-full border border-blue-200 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-blue-700 mb-1">End Date</label>
-                        <input type="date" name="discount_end_date" class="w-full border border-blue-200 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label class="block text-xs font-bold text-blue-700 mb-1">End Date & Time</label>
+                        <input type="datetime-local" name="discount_end_date" class="w-full border border-blue-200 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
                 </div>
             </div>
@@ -197,18 +214,62 @@
 </div>
 
 <script>
+    const addRoute = "{{ route('admin.products.store') }}";
+    
     function openAddModal() {
         document.getElementById('addProductModal').classList.remove('hidden');
+        document.getElementById('productForm').reset();
+        document.getElementById('productForm').action = addRoute;
+        document.getElementById('methodFieldContainer').innerHTML = ''; // Clear PUT
+        document.getElementById('modalTitle').textContent = 'Add New Product';
+        
+        // Reset Preview
+        document.getElementById('imagePreview').classList.add('hidden');
+        document.getElementById('placeholderText').classList.remove('hidden');
     }
+
+    function editProduct(btn) {
+        const product = JSON.parse(btn.dataset.product);
+        const form = document.getElementById('productForm');
+        
+        // Open Modal
+        document.getElementById('addProductModal').classList.remove('hidden');
+        document.getElementById('modalTitle').textContent = 'Edit Product';
+        
+        // Set Action & Method
+        form.action = `/admin/products/${product.id}`;
+        document.getElementById('methodFieldContainer').innerHTML = '<input type="hidden" name="_method" value="PUT">';
+        
+        // Populate Fields
+        form.querySelector('[name="name"]').value = product.name;
+        form.querySelector('[name="category_id"]').value = product.category_id;
+        form.querySelector('[name="price"]').value = product.price;
+        form.querySelector('[name="stock"]').value = product.stock;
+        form.querySelector('[name="description"]').value = product.description || '';
+        form.querySelector('[name="specifications"]').value = product.specifications || '';
+        form.querySelector('[name="discount_percent"]').value = product.discount_percent || '';
+        
+        // Date Formatting for datetime-local (YYYY-MM-DDTHH:MM)
+        if(product.discount_start_date) {
+            form.querySelector('[name="discount_start_date"]').value = product.discount_start_date.replace(' ', 'T').substring(0, 16);
+        }
+        if(product.discount_end_date) {
+             form.querySelector('[name="discount_end_date"]').value = product.discount_end_date.replace(' ', 'T').substring(0, 16);
+        }
+    }
+
     function closeAddModal() {
         document.getElementById('addProductModal').classList.add('hidden');
     }
+
     function previewImage(event) {
         var output = document.getElementById('imagePreview');
         var placeholder = document.getElementById('placeholderText');
-        output.src = URL.createObjectURL(event.target.files[0]);
-        output.classList.remove('hidden');
-        placeholder.classList.add('hidden');
+        if(event.target.files && event.target.files[0]) {
+            output.src = URL.createObjectURL(event.target.files[0]);
+            output.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+        }
     }
 </script>
 

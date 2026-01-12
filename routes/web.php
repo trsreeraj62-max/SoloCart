@@ -22,7 +22,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/cart/remove', [CartWebController::class, 'remove'])->name('cart.remove');
     Route::delete('/cart/remove', [CartWebController::class, 'remove'])->name('cart.remove');
     
-    Route::get('/checkout', [OrderWebController::class, 'checkout'])->name('checkout');
+    Route::get('/checkout', [OrderWebController::class, 'checkout'])->name('checkout.index');
     Route::get('/checkout/single', [OrderWebController::class, 'checkout'])->name('checkout.single');
     Route::post('/checkout/process', [OrderWebController::class, 'store'])->name('checkout.store');
     Route::get('/checkout/pay/{id}', [OrderWebController::class, 'paymentPage'])->name('checkout.pay');
@@ -37,6 +37,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/orders/{id}/invoice', [OrderWebController::class, 'downloadInvoice'])->name('orders.invoice');
     
     Route::get('/profile', function () { return view('profile.edit'); })->name('profile.edit');
+    Route::post('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
 });
 
 // Auth Pages
@@ -78,6 +79,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Banners
         Route::get('/banners', [AdminWebController::class, 'banners'])->name('banners.index');
         Route::post('/banners', [AdminWebController::class, 'storeBanner'])->name('banners.store');
+        Route::put('/banners/{id}', [AdminWebController::class, 'updateBanner'])->name('banners.update');
         Route::delete('/banners/{id}', [AdminWebController::class, 'destroyBanner'])->name('banners.destroy');
 
         // Discounts
