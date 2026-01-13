@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\AdminAnalyticsController;
 use App\Http\Controllers\Api\ContactController;
+use App\Models\Product;
 
 // Auth
 Route::post('/register', [AuthController::class, 'register']); // Sends OTP
@@ -81,4 +82,20 @@ Route::get('/home-data', function () {
         'status' => true,
         'products' => Product::latest()->take(8)->get()
     ]);
+});
+
+
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok']);
+});
+
+Route::get('/home-data', function () {
+    return response()->json([
+        'status' => true,
+        'products' => Product::latest()->take(8)->get()
+    ]);
+});
+
+Route::get('/products', function () {
+    return Product::all();
 });
