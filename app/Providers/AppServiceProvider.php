@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+ use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Artisan;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,8 +19,19 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
-    {
-        //
+  
+
+public function boot()
+{
+    Schema::defaultStringLength(191);
+
+    if (app()->environment('production')) {
+        try {
+            Artisan::call('migrate', ['--force' => true]);
+        } catch (\Throwable $e) {
+            // Prevent crash in production
+        }
     }
+}
+
 }
