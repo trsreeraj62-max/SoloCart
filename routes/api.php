@@ -88,6 +88,22 @@ Route::get('/home-data', function () {
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
+use Illuminate\Support\Facades\DB;
+
+Route::get('/db-test', function () {
+    try {
+        DB::connection()->getPdo();
+        return response()->json([
+            'db' => 'connected'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'db' => 'failed',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
+
 
 Route::get('/home-data', function () {
     return response()->json([
