@@ -9,7 +9,7 @@
     <div class="carousel-inner">
         @forelse($banners as $index => $banner)
             <div class="carousel-item {{ $index == 0 ? 'active' : '' }}">
-                <img src="{{ Str::startsWith($banner->image_path, 'http') ? $banner->image_path : asset('storage/' . $banner->image_path) }}" 
+                <img src="{{ $banner->image_url }}" 
                      class="d-block w-full h-[280px] md:h-[350px] object-cover" alt="Banner">
                 @if($banner->title)
                 <div class="carousel-caption d-none d-md-block bg-black/20 backdrop-blur-sm rounded-lg p-4 mb-10 max-w-lg mx-auto">
@@ -21,10 +21,10 @@
         @empty
             <!-- Fallback Static Banner -->
             <div class="carousel-item active">
-                <img src="https://rukminim1.flixcart.com/fk-p-flap/1600/270/image/35349f783226317b.jpg" class="d-block w-full h-[280px] md:h-[350px] object-cover" alt="Default Banner">
+                <img src="https://rukminim1.flixcart.com/fk-p-flap/1600/270/image/35349f783226317b.jpg?q=20" class="d-block w-full h-[280px] md:h-[350px] object-cover" alt="Default Banner">
             </div>
             <div class="carousel-item">
-                <img src="https://rukminim1.flixcart.com/fk-p-flap/1600/270/image/edeb643194511d54.jpg" class="d-block w-full h-[280px] md:h-[350px] object-cover" alt="Default Banner">
+                <img src="https://rukminim1.flixcart.com/fk-p-flap/1600/270/image/edeb643194511d54.jpg?q=20" class="d-block w-full h-[280px] md:h-[350px] object-cover" alt="Default Banner">
             </div>
         @endforelse
     </div>

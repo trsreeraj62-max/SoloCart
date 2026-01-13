@@ -20,10 +20,17 @@ use App\Http\Controllers\Api\{
 */
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
 
-Route::get('/home-data', fn () => response()->json([
-    'success' => true,
-    'products' => \App\Models\Product::latest()->take(8)->get()
-]));
+Route::get('/home-data', function() {
+    return response()->json([
+        'success' => true,
+        'message' => 'Home data retrieved',
+        'data' => [
+            'banners' => \App\Models\Banner::all(),
+            'categories' => \App\Models\Category::all(),
+            'products' => \App\Models\Product::with(['category', 'images'])->latest()->take(10)->get()
+        ]
+    ]);
+});
 
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
@@ -57,7 +64,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart/add', [CartController::class, 'add']);
     Route::post('/cart/update', [CartController::class, 'update']);
+    Route::put('/cart/{id}', [CartController::class, 'update']);
     Route::post('/cart/remove', [CartController::class, 'remove']);
+    Route::delete('/cart/{id}', [CartController::class, 'remove']);
     Route::post('/cart/clear', [CartController::class, 'clear']);
 
     // Checkout

@@ -15,13 +15,18 @@ class CartController extends ApiController
      */
     public function index()
     {
-        $cart = Auth::user()->cart()->with('items.product')->first();
-        
-        if (!$cart) {
-            $cart = Auth::user()->cart()->create();
-        }
+        try {
+            $user = Auth::user();
+            $cart = $user->cart()->with('items.product.images')->first();
+            
+            if (!$cart) {
+                $cart = $user->cart()->create();
+            }
 
-        return $this->success($cart, "Cart retrieved");
+            return $this->success($cart, "Cart retrieved");
+        } catch (\Exception $e) {
+            return $this->error("Failed to retrieve cart: " . $e->getMessage());
+        }
     }
 
     /**
@@ -34,57 +39,88 @@ class CartController extends ApiController
             'quantity' => 'required|integer|min:1'
         ]);
 
-        $user = Auth::user();
-        $cart = $user->cart ?: $user->cart()->create();
-        
-        $item = $cart->items()->where('product_id', $request->product_id)->first();
+        try {
+            $product = Product::findOrFail($request->product_id);
+            
+            if ($product->stock < $request->quantity) {
+                return $this->error("Only " . $product->stock . " items in stock", 422);
+            }
 
-        if ($item) {
-            $item->increment('quantity', $request->quantity);
-        } else {
-            $cart->items()->create([
-                'product_id' => $request->product_id,
-                'quantity' => $request->quantity
-            ]);
+            $user = Auth::user();
+            $cart = $user->cart ?: $user->cart()->create();
+            
+            $item = $cart->items()->where('product_id', $request->product_id)->first();
+
+            if ($item) {
+                if ($product->stock < ($item->quantity + $request->quantity)) {
+                    return $this->error("Cannot add more. Only " . $product->stock . " items in stock total.", 422);
+                }
+                $item->increment('quantity', $request->quantity);
+            } else {
+                $cart->items()->create([
+                    'product_id' => $request->product_id,
+                    'quantity' => $request->quantity
+                ]);
+            }
+
+            return $this->success($cart->load('items.product.images'), "Item added to cart");
+        } catch (\Exception $e) {
+            return $this->error("Failed to add item: " . $e->getMessage());
         }
-
-        return $this->success($cart->load('items.product'), "Item added to cart");
     }
 
     /**
      * Update item quantity
      */
-    public function update(Request $request)
+    public function update(Request $request, $id = null)
     {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1'
-        ]);
+        $productId = $id ?? $request->product_id;
+        
+        if (!$productId) {
+            return $this->error("Product ID is required", 422);
+        }
 
-        $cart = Auth::user()->cart;
-        if (!$cart) return $this->error("Cart not found", 404);
+        try {
+            $product = Product::findOrFail($productId);
+            if ($product->stock < $request->quantity) {
+                return $this->error("Only " . $product->stock . " items in stock", 422);
+            }
 
-        $item = $cart->items()->where('product_id', $request->product_id)->first();
-        if (!$item) return $this->error("Item not in cart", 404);
+            $cart = Auth::user()->cart;
+            if (!$cart) return $this->error("Cart not found", 404);
 
-        $item->update(['quantity' => $request->quantity]);
+            $item = $cart->items()->where('product_id', $request->product_id)->first();
+            if (!$item) return $this->error("Item not in cart", 404);
 
-        return $this->success($cart->load('items.product'), "Cart updated");
+            $item->update(['quantity' => $request->quantity]);
+
+            return $this->success($cart->load('items.product.images'), "Cart updated");
+        } catch (\Exception $e) {
+            return $this->error("Update failed: " . $e->getMessage());
+        }
     }
 
     /**
      * Remove item from cart
      */
-    public function remove(Request $request)
+    public function remove(Request $request, $id = null)
     {
-        $request->validate(['product_id' => 'required']);
+        $productId = $id ?? $request->product_id;
 
-        $cart = Auth::user()->cart;
-        if ($cart) {
-            $cart->items()->where('product_id', $request->product_id)->delete();
+        if (!$productId) {
+            return $this->error("Product ID is required", 422);
         }
 
-        return $this->success($cart ? $cart->load('items.product') : [], "Item removed");
+        try {
+            $cart = Auth::user()->cart;
+            if ($cart) {
+                $cart->items()->where('product_id', $productId)->delete();
+            }
+
+            return $this->success($cart ? $cart->load('items.product.images') : [], "Item removed from cart");
+        } catch (\Exception $e) {
+            return $this->error("Removal failed: " . $e->getMessage());
+        }
     }
 
     /**

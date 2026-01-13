@@ -84,6 +84,7 @@ public function login(Request $request)
 
     return $this->success([
         'token' => $token,
+        'access_token' => $token,
         'token_type' => 'Bearer',
         'user' => $user
     ], 'Login successful');
@@ -106,6 +107,7 @@ public function login(Request $request)
             $user->update(['last_login_at' => now(), 'email_verified_at' => now()]);
 
             return $this->success([
+                'token' => $token,
                 'access_token' => $token,
                 'token_type' => 'Bearer',
                 'user' => $user
