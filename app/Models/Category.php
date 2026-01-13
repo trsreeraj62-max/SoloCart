@@ -11,6 +11,8 @@ class Category extends Model
 
     protected $fillable = ['name', 'slug', 'image'];
 
+    protected $appends = ['image_url'];
+
     public function products()
     {
         return $this->hasMany(Product::class);
@@ -19,6 +21,9 @@ class Category extends Model
     public function getImageUrlAttribute()
     {
         if ($this->image) {
+            if (filter_var($this->image, FILTER_VALIDATE_URL)) {
+                return $this->image;
+            }
             return asset('storage/' . $this->image);
         }
 
