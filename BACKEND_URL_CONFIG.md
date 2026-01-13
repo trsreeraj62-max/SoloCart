@@ -1,7 +1,8 @@
 # 🚀 SoloCart Backend URL Configuration Summary
 
-## Backend URL
-**Production**: `https://solocart-backend.onrender.com`
+## URLs
+**Backend (API)**: `https://solocart-backend.onrender.com`  
+**Frontend**: `https://polite-bombolone-b0c069.netlify.app`
 
 ---
 
@@ -12,19 +13,35 @@
 #### `.env.example`
 ```env
 APP_URL=https://solocart-backend.onrender.com
+FRONTEND_URL=https://polite-bombolone-b0c069.netlify.app
+SANCTUM_STATEFUL_DOMAINS=polite-bombolone-b0c069.netlify.app
+SESSION_DOMAIN=.netlify.app
 ```
 
 #### `.env.render`
 ```env
 APP_URL=https://solocart-backend.onrender.com
-SANCTUM_STATEFUL_DOMAINS=solocart-backend.onrender.com
+FRONTEND_URL=https://polite-bombolone-b0c069.netlify.app
+SANCTUM_STATEFUL_DOMAINS=polite-bombolone-b0c069.netlify.app
+SESSION_DOMAIN=.netlify.app
 ```
 
-> **Note**: The `.env` file (gitignored) already has the correct URL configured.
+> **Note**: The `.env` file (gitignored) should have the same configuration.
 
 ---
 
-### 2. **API Testing Guide**
+### 2. **CORS Configuration**
+
+#### `config/cors.php`
+```php
+'allowed_origins' => ['https://polite-bombolone-b0c069.netlify.app'],
+```
+
+✅ **Fixed**: Removed syntax error and configured to allow only the frontend domain
+
+---
+
+### 3. **API Testing Guide**
 
 #### `API_TESTING_GUIDE.md`
 All API endpoints now use the full backend URL instead of placeholders:
@@ -38,18 +55,19 @@ All API endpoints now use the full backend URL instead of placeholders:
 
 ---
 
-### 3. **Documentation**
+### 4. **Documentation**
 
 #### `README.md`
 Added deployment section with:
 - Backend URL link
+- Frontend URL link
 - Deployment details (PostgreSQL, Docker, cache clearing)
 
 ---
 
 ## 🔧 Configuration Files (Auto-configured via ENV)
 
-These files automatically use the `APP_URL` environment variable:
+These files automatically use the environment variables:
 
 ### `config/app.php`
 ```php
@@ -68,7 +86,7 @@ These files automatically use the `APP_URL` environment variable:
 
 ### `config/cors.php`
 ```php
-'allowed_origins' => ['*'], // Currently allows all origins
+'allowed_origins' => ['https://polite-bombolone-b0c069.netlify.app'],
 ```
 
 ---
@@ -76,16 +94,19 @@ These files automatically use the `APP_URL` environment variable:
 ## 📝 How It Works
 
 1. **Environment Variables**: The `APP_URL` is set in `.env` or Render's environment variables
-2. **Sanctum Authentication**: Uses `SANCTUM_STATEFUL_DOMAINS` for stateful API authentication
-3. **CORS**: Currently configured to allow all origins (`*`)
-4. **File Storage**: Public storage URLs are automatically prefixed with `APP_URL`
+2. **Frontend URL**: The `FRONTEND_URL` is used for redirects and email links
+3. **Sanctum Authentication**: Uses `SANCTUM_STATEFUL_DOMAINS` for stateful API authentication from frontend
+4. **CORS**: Configured to allow requests only from the Netlify frontend
+5. **File Storage**: Public storage URLs are automatically prefixed with `APP_URL`
 
 ---
 
 ## 🚀 Deployment Status
 
 ✅ **Dockerfile** - Includes cache clearing commands  
-✅ **Environment Files** - Updated with production URL  
+✅ **Environment Files** - Updated with production URLs  
+✅ **CORS Configuration** - Fixed and configured for frontend  
+✅ **Sanctum Configuration** - Configured for frontend domain  
 ✅ **API Documentation** - Ready for testing with full URLs  
 ✅ **README** - Includes deployment information  
 
@@ -94,6 +115,7 @@ These files automatically use the `APP_URL` environment variable:
 ## 🔗 Quick Links
 
 - **Backend API**: https://solocart-backend.onrender.com
+- **Frontend**: https://polite-bombolone-b0c069.netlify.app
 - **API Docs**: See `API_TESTING_GUIDE.md`
 - **Admin Panel**: https://solocart-backend.onrender.com/admin/dashboard
 
@@ -101,11 +123,14 @@ These files automatically use the `APP_URL` environment variable:
 
 ## 📌 Next Steps
 
-1. Verify the Render deployment is successful
-2. Test API endpoints using the `API_TESTING_GUIDE.md`
-3. Ensure database migrations have run on Render
-4. Test admin authentication and functionality
-5. Configure frontend to use this backend URL (if separate frontend exists)
+1. ✅ Update environment variables on Render with FRONTEND_URL
+2. ✅ Verify CORS configuration allows frontend requests
+3. ✅ Test API endpoints from frontend
+4. ✅ Ensure Sanctum authentication works with frontend
+5. ✅ Test admin authentication and functionality
+6. ✅ Verify database migrations have run on Render
+7. ✅ Push changes to GitHub to trigger Render deployment
+
 
 ---
 

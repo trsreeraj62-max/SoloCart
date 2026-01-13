@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => ['https://polite-bombolone-b0c069.netlify.app'],
 
     'allowed_origins_patterns' => [],
 
