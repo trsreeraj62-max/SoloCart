@@ -77,7 +77,7 @@ Route::middleware('auth:sanctum')->group(function () {
 | ADMIN (ADD admin middleware later)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     Route::get('/analytics', [AdminAnalyticsController::class, 'index']);
     Route::get('/orders', [OrderController::class, 'adminIndex']);
     Route::post('/orders/{id}/status', [OrderController::class, 'updateStatus']);

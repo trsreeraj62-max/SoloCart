@@ -37,7 +37,7 @@ class AuthController extends ApiController
 
         try {
             if ($mailer_type !== 'log') {
-                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
+                \Illuminate\Support\Facades\Mail::to($user->email)->queue(new \App\Mail\OtpMail($otp));
                 $mail_sent = true;
             } else {
                 $mail_error = "Server is in 'LOG' mode. No real email sent.";
@@ -129,7 +129,7 @@ public function login(Request $request)
 
         try {
             if ($mailer_type !== 'log') {
-                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
+                \Illuminate\Support\Facades\Mail::to($user->email)->queue(new \App\Mail\OtpMail($otp));
                 $mail_sent = true;
             } else {
                 $mail_error = "Server is in 'LOG' mode. No real email sent.";
