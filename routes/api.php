@@ -74,3 +74,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/admin/discounts/category', [\App\Http\Controllers\Api\DiscountController::class, 'applyCategory']);
     });
 });
+use App\Models\Product;
+
+Route::get('/home-data', function () {
+    return response()->json([
+        'status' => true,
+        'products' => Product::latest()->take(8)->get()
+    ]);
+});
