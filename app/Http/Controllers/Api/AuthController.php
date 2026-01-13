@@ -48,54 +48,24 @@ class AuthController extends ApiController
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required',
+            'password' => 'required'
         ]);
 
-        $user = User::where('email', $request->email)->first();
-
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            return $this->error('Invalid credentials', 401);
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json([
+                'message' => 'Invalid credentials'
+            ], 401);
         }
 
-        // Admin bypass
-        if ($user->role === 'admin') {
-            $token = $user->createToken('auth_token')->plainTextToken;
-            $user->update(['last_login_at' => now()]);
-            return $this->success([
-                'access_token' => $token,
-                'token_type' => 'Bearer',
-                'role' => 'admin',
-                'user' => $user
-            ], 'Admin Login Successful');
-        }
+        $user = Auth::user();
 
-        // Check 2 months logic (for security)
-        $twoMonthsAgo = Carbon::now()->subMonths(2);
-        if (!$user->last_login_at || Carbon::parse($user->last_login_at)->lt($twoMonthsAgo)) {
-             $otp = rand(100000, 999999);
-             Cache::put('otp_' . $user->id, $otp, 600);
-             try {
-                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
-             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Login OTP Mail Error: ' . $e->getMessage());
-             }
-             
-             return $this->success([
-                 'require_otp' => true,
-                 'user_id' => $user->id
-             ], 'OTP Required. Sent to email.');
-        }
-
-        // Normal login
         $token = $user->createToken('auth_token')->plainTextToken;
-        $user->update(['last_login_at' => now()]);
 
-        return $this->success([
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'role' => 'user',
+        return response()->json([
+            'status' => true,
+            'token' => $token,
             'user' => $user
-        ], 'Login Successful');
+        ]);
     }
 
     public function verifyOtp(Request $request)
