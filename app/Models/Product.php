@@ -49,4 +49,12 @@ class Product extends Model
     {
         return $this->hasMany(CartItem::class);
     }
+
+    public function getImageUrlAttribute()
+    {
+        if ($this->images && $this->images->first()) {
+            return asset('storage/' . $this->images->first()->image_path);
+        }
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=f1f3f6&color=2874f0&bold=true&size=300';
+    }
 }

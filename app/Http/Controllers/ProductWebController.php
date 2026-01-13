@@ -17,23 +17,41 @@ class ProductWebController extends Controller
                 $query->where('name', 'like', '%' . $request->search . '%');
             }
     
-            if ($request->filled('category_id')) {
-                $query->where('category_id', $request->category_id);
+            $categoryId = $request->input('category_id') ?? $request->input('category');
+            if ($categoryId) {
+                $query->where('category_id', $categoryId);
             }
             
-            if ($request->filled('min_price')) {
-                 $query->where('price', '>=', $request->min_price);
+            $minPrice = $request->input('min_price') ?? $request->input('min');
+            if ($minPrice) {
+                 $query->where('price', '>=', $minPrice);
             }
-            if ($request->filled('max_price')) {
-                 $query->where('price', '<=', $request->max_price);
+            
+            $maxPrice = $request->input('max_price') ?? $request->input('max');
+            if ($maxPrice) {
+                 $query->where('price', '<=', $maxPrice);
             }
     
             $products = $query->paginate(12);
             $categories = Category::all();
     
+            if ($request->ajax()) {
+                $html = '';
+                foreach ($products as $product) {
+                    $html .= view('components.product-card', compact('product'))->render();
+                }
+                return response()->json([
+                    'html' => $html,
+                    'next_page' => $products->nextPageUrl()
+                ]);
+            }
+
             return view('products.index', compact('products', 'categories'));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Product Index Error: ' . $e->getMessage());
+            if ($request->ajax()) {
+                return response()->json(['error' => 'An error occurred.'], 500);
+            }
             return back()->with('error', 'Unable to load products. Please try again.');
         }
     }

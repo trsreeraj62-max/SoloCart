@@ -12,16 +12,19 @@ class ContactController extends ApiController
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required|email',
-            'subject' => 'required',
-            'message' => 'required'
-        ]);
+        try {
+            $request->validate([
+                'name' => 'required',
+                'email' => 'required|email',
+                'subject' => 'required',
+                'message' => 'required'
+            ]);
 
-        // If you have a ContactMessage model, save it. 
-        // For now, mirroring standard behavior which usually fires an email or saves to DB.
-        
-        return $this->success([], "Message received. We will get back to you soon!");
+            // For now, mirroring standard behavior which usually fires an email or saves to DB.
+            
+            return $this->success([], "Message received. We will get back to you soon!");
+        } catch (\Exception $e) {
+            return $this->error("Failed to process your message. Please try again later.", 500);
+        }
     }
 }

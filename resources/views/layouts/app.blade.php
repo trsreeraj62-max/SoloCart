@@ -3,152 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>{{ config('app.name', 'SoloCart') }}</title>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&display=swap" rel="stylesheet">
-    <!-- Styles -->
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    <!-- CSRF Token -->
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ config('app.name', 'SoloCart') }} — Flipkart Style Premium</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    {{-- Bootstrap --}}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    {{-- Tailwind --}}
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --fk-blue: #2874f0;
+            --fk-yellow: #ffe500;
+            --fk-bg: #f1f3f6;
+        }
+        body {
+            background-color: var(--fk-bg);
+            font-family: 'Inter', sans-serif;
+            color: #212121;
+        }
+        .container-max {
+            max-width: 1280px;
+        }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        /* Premium Toast Minimalist */
+        #toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .fk-toast {
+            background: #212121;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            animation: toastIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            border-left: 4px solid #2874f0;
+        }
+        .fk-toast.error { border-left-color: #ff6161; }
+        .fk-toast.success { border-left-color: #388e3c; }
+        
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(100px); }
+        }
+    </style>
+    @stack('styles')
 </head>
 <body>
-    
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="container flex items-center justify-between">
-            <div class="flex items-center">
-                <a href="{{ route('home') }}" class="nav-logo">SoloCart.</a>
-                
-                @if(!request()->routeIs('home') && !request()->routeIs('products.index'))
-                <div class="search-bar-container">
-                    <form action="{{ route('products.index') }}" method="GET">
-                        <input type="text" name="search" class="search-input" placeholder="Search products..." value="{{ request('search') }}">
-                    </form>
-                </div>
-                @endif
-            </div>
 
-            <ul class="nav-menu">
-                <li><a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">Home</a></li>
-                <li><a href="{{ route('products.index') }}" class="nav-link {{ request()->routeIs('products.index') ? 'active' : '' }}">Shop</a></li>
-                <li><a href="{{ route('about') }}" class="nav-link {{ request()->routeIs('about') ? 'active' : '' }}">About</a></li>
-                <li><a href="{{ route('contact') }}" class="nav-link {{ request()->routeIs('contact') ? 'active' : '' }}">Contact</a></li>
-                
-                @auth
-                    <li>
-                        <a href="{{ route('cart.index') }}" class="nav-link" style="display: flex; align-items: center; position: relative; padding: 0.5rem;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                                <line x1="3" y1="6" x2="21" y2="6"></line>
-                                <path d="M16 10a4 4 0 0 1-8 0"></path>
-                            </svg>
-                            <span id="cart-count" style="position: absolute; top: -5px; right: -8px; background: var(--secondary); color: white; border-radius: 50%; height: 18px; min-width: 18px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold;">
-                                {{ auth()->user()->cart?->items->sum('quantity') ?? 0 }}
-                            </span>
-                        </a>
-                    </li>
-                    
-                    <li class="nav-item dropdown" id="userDropdown">
-                        <a href="#" onclick="toggleDropdown(event)" class="flex items-center gap-2">
-                            @if(auth()->user()->profile_photo)
-                                <img src="{{ asset('storage/' . auth()->user()->profile_photo) }}" alt="Profile" class="profile-img">
-                            @else
-                                <div class="profile-img" style="background: #ddd; display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden; color: #555;">{{ substr(auth()->user()->name, 0, 1) }}</div>
-                            @endif
-                        </a>
-                        <div class="dropdown-menu">
-                            <a href="{{ route('profile.edit') }}" class="dropdown-item">My Profile</a>
-                            <a href="{{ route('orders.index') }}" class="dropdown-item">My Orders</a>
-                            @if(auth()->user()->role === 'admin')
-                                <a href="{{ route('admin.dashboard') }}" class="dropdown-item">Admin Dashboard</a>
-                            @endif
-                            <div class="dropdown-divider"></div>
-                            <form action="{{ route('logout') }}" method="POST" style="margin: 0;">
-                                @csrf
-                                <button type="submit" class="dropdown-item text-danger">Logout</button>
-                            </form>
-                        </div>
-                    </li>
+    <div id="toast-container"></div>
 
-                    <script>
-                        function toggleDropdown(e) {
-                            e.preventDefault();
-                            document.querySelector('.dropdown').classList.toggle('active');
-                        }
+    <script>
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `fk-toast ${type}`;
+            
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'toastOut 0.4s ease-in forwards';
+                setTimeout(() => toast.remove(), 400);
+            }, 4000);
+        };
 
-                        // Close dropdown when clicking outside
-                        document.addEventListener('click', function(e) {
-                            const dropdown = document.querySelector('.dropdown');
-                            if (dropdown && !dropdown.contains(e.target)) {
-                                dropdown.classList.remove('active');
-                            }
-                        });
-                    </script>
-                    @if(auth()->user()->role === 'admin')
-                         <li><a href="{{ route('admin.dashboard') }}" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Admin</a></li>
-                    @endif
-                @else
-                    <li><a href="{{ route('login') }}" class="nav-link">Login</a></li>
-                    <li><a href="{{ route('register') }}" class="btn btn-primary">Sign Up</a></li>
-                @endauth
-            </ul>
-        </div>
-    </nav>
+        // Flash Messages
+        @if(session('success')) showToast("{{ session('success') }}", 'success'); @endif
+        @if(session('error')) showToast("{{ session('error') }}", 'error'); @endif
+        @if(session('info')) showToast("{{ session('info') }}", 'success'); @endif
+        @if(session('status')) showToast("{{ session('status') }}", 'success'); @endif
+        
+        @if($errors->any())
+            @foreach($errors->all() as $error)
+                showToast("{{ $error }}", 'error');
+            @endforeach
+        @endif
+    </script>
 
-    <!-- Main Content -->
-    <main style="min-height: 80vh; padding-bottom: 4rem;">
-        <div class="container mt-4">
-            @if(session('success'))
-                <div class="mb-4 p-3 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/10 flex items-center gap-3 animate-in fade-in duration-300 max-w-fit">
-                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-xs"><i class="fas fa-check"></i></div>
-                    <p class="font-bold text-sm m-0">{{ session('success') }}</p>
-                </div>
-            @endif
+    {{-- Navbar --}}
+    @include('components.navbar')
 
-            @if(session('error'))
-                <div class="mb-4 p-3 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/10 flex items-center gap-3 animate-in fade-in duration-300 max-w-fit">
-                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-xs"><i class="fas fa-times"></i></div>
-                    <p class="font-bold text-sm m-0">{{ session('error') }}</p>
-                </div>
-            @endif
-        </div>
+    {{-- Main Content - No global container to allow full-width sections --}}
+    <main class="min-h-[80vh]">
         @yield('content')
     </main>
 
-    <!-- Footer -->
-    <footer style="background: #0f172a; color: white; padding: 4rem 0; margin-top: auto;">
-        <div class="container grid" style="grid-template-columns: repeat(4, 1fr); gap: 2rem;">
-            <div>
-                <h3 class="font-bold text-xl mb-4">SoloCart.</h3>
-                <p class="text-muted" style="color: #94a3b8;">Premium shopping experience delivered to your doorstep.</p>
-            </div>
-            <div>
-                <h4 class="font-bold mb-4">Shop</h4>
-                <ul>
-                    <li><a href="#" class="text-muted" style="color: #94a3b8;">New Arrivals</a></li>
-                    <li><a href="#" class="text-muted" style="color: #94a3b8;">Best Sellers</a></li>
-                    <li><a href="#" class="text-muted" style="color: #94a3b8;">Discounts</a></li>
-                </ul>
-            </div>
-            <div>
-                <h4 class="font-bold mb-4">Company</h4>
-                <ul>
-                    <li><a href="#" class="text-muted" style="color: #94a3b8;">About Us</a></li>
-                    <li><a href="#" class="text-muted" style="color: #94a3b8;">Contact</a></li>
-                    <li><a href="#" class="text-muted" style="color: #94a3b8;">Terms</a></li>
-                </ul>
-            </div>
-            <div>
-                <h4 class="font-bold mb-4">Newsletter</h4>
-                <input type="email" placeholder="Your email" class="input-field" style="margin-bottom: 0.5rem;">
-                <button class="btn btn-primary">Subscribe</button>
-            </div>
-        </div>
-        <div class="container text-center mt-4 text-muted" style="color: #94a3b8;">
-            &copy; {{ date('Y') }} SoloCart. All rights reserved.
-        </div>
-    </footer>
+    {{-- Footer --}}
+    @include('components.footer')
 
+    {{-- Scripts --}}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    @stack('scripts')
 </body>
 </html>

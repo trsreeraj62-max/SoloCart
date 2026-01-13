@@ -1,134 +1,143 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="cart-page py-16 bg-slate-50 min-h-screen">
-    <div class="container" style="max-width: 1100px; margin: 0 auto; padding: 0 1.5rem;">
+<div class="bg-[#f1f3f6] min-h-screen py-8">
+    <div class="container container-max px-4">
         
-        <div class="mb-12">
-            <span class="text-[10px] font-black text-primary uppercase tracking-[0.3em] block mb-2 cursor-default">Your Selection</span>
-            <h1 class="text-5xl font-black text-slate-900 tracking-tighter italic">Shopping Cart</h1>
+        <div class="mb-8 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">Acquisition : <span class="text-[#2874f0]">Cart Manifest</span></h1>
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] mt-1">Review and synchronize your selected items</p>
+            </div>
+            <div class="text-right hidden md:block">
+                <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Total Cart Value</p>
+                <p class="text-2xl font-black text-[#2874f0] m-0">₹{{ number_format($totalPrice) }}</p>
+            </div>
         </div>
 
-        @if($cart && $cart->items->count() > 0)
-            <div class="grid lg:grid-cols-12 gap-12 items-start">
-                
-                <!-- Items Column -->
-                <div class="lg:col-span-8 space-y-8">
-                    @foreach($cart->items as $item)
-                    <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 flex md:flex-row flex-col gap-10 items-center relative group overflow-hidden">
-                        <div class="absolute top-0 left-0 w-1.5 h-full bg-slate-100 group-hover:bg-primary transition-all duration-500"></div>
-                        
-                        <!-- Product Image -->
-                        <div class="w-40 h-40 bg-slate-50 rounded-3xl overflow-hidden p-6 flex-shrink-0 group-hover:scale-105 transition duration-500">
-                             @if($item->product->images->first())
-                                <img src="{{ asset('storage/' . $item->product->images->first()->image_path) }}" class="w-full h-full object-contain">
-                            @else
-                                <img src="https://placehold.co/100x100?text=Item" class="w-full h-full object-contain opacity-20">
-                            @endif
-                        </div>
-
-                        <!-- Product Info -->
-                        <div class="flex-1 space-y-2">
-                            <h3 class="text-2xl font-black text-slate-800 tracking-tight">
-                                <a href="{{ route('products.show', $item->product->slug ?? $item->product->id) }}" class="hover:text-primary transition no-underline block">
-                                    {{ $item->product->name }}
-                                </a>
-                            </h3>
-                            <div class="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                                <span>{{ $item->product->category->name ?? 'Premium' }}</span>
-                                <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
-                                <span>ID: #{{ $item->product->id }}</span>
-                            </div>
-                            
-                            <div class="pt-6 flex items-center gap-10">
-                                <div>
-                                    <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Quantity</p>
-                                    <div class="flex items-center bg-slate-100 rounded-xl px-4 py-2 font-black text-slate-700">
-                                         {{ $item->quantity }}
-                                    </div>
-                                </div>
-                                <div>
-                                    <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Subtotal</p>
-                                    <div class="text-2xl font-black text-slate-900 tracking-tighter italic">
-                                        ${{ number_format($item->quantity * $item->product->price, 2) }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Row Actions -->
-                        <div class="flex flex-col gap-4 min-w-[160px] relative z-10">
-                            <a href="{{ route('checkout.index') }}?buy_item={{ $item->id }}" class="bg-primary text-white text-[10px] font-black py-4 px-6 rounded-2xl text-center shadow-lg shadow-primary/20 hover:shadow-primary/40 transition no-underline uppercase tracking-widest hover:-translate-y-1">
-                                Buy Item
-                            </a>
-                            
-                            <form action="{{ route('cart.remove') }}" method="POST" class="absolute -top-12 -right-4 md:static">
-                                 @csrf
-                                 @method('DELETE')
-                                 <input type="hidden" name="cart_item_id" value="{{ $item->id }}">
-                                 <button type="submit" class="w-full md:bg-slate-50 md:text-slate-300 md:hover:text-red-500 transition py-3 rounded-xl border-none cursor-pointer flex items-center justify-center gap-2 group/btn">
-                                     <i class="fas fa-trash-alt text-sm"></i>
-                                     <span class="text-[9px] font-black uppercase md:hidden lg:inline">Remove</span>
-                                 </button>
-                            </form>
-                        </div>
-                    </div>
-                    @endforeach
+        @if ($cart->isEmpty())
+            <div class="bg-white rounded-sm shadow-sm border border-slate-100 p-20 text-center">
+                <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-shopping-basket text-slate-200 text-4xl"></i>
                 </div>
-
-                <!-- Summary Column -->
-                <div class="lg:col-span-4 lg:sticky lg:top-32">
-                    <div class="bg-white p-12 rounded-[3.5rem] shadow-xl border border-slate-100 relative overflow-hidden">
-                        <div class="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
-                        
-                        <h3 class="text-2xl font-black mb-10 text-slate-900 relative z-10">Order Summary</h3>
-                        
-                        <div class="space-y-6 mb-10">
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="text-slate-400 font-bold uppercase tracking-widest">Base Value</span>
-                                <span class="text-slate-700 font-black tracking-tighter text-lg italic">${{ number_format($cart->items->sum(fn($i) => $i->quantity * $i->product->price), 2) }}</span>
-                            </div>
-                            <div class="flex justify-between items-center text-emerald-500 text-sm">
-                                <span class="font-bold uppercase tracking-widest">Premium Shipping</span>
-                                <span class="font-black italic">COMPLIMENTARY</span>
-                            </div>
-                        </div>
-
-                        <div class="h-px bg-slate-50 w-full mb-10"></div>
-
-                        <div class="flex justify-between items-end mb-12">
-                            <div>
-                                <span class="text-slate-300 uppercase text-[9px] font-black tracking-widest block mb-1">Final Amount</span>
-                                <div class="text-5xl font-black text-primary tracking-tighter italic leading-none">${{ number_format($cart->items->sum(fn($i) => $i->quantity * $i->product->price), 2) }}</div>
-                            </div>
-                        </div>
-
-                        <a href="{{ route('checkout.index') }}" class="w-full py-6 bg-slate-900 text-white font-black rounded-3xl shadow-2xl hover:shadow-slate-900/40 transition-all flex items-center justify-center gap-4 no-underline text-xs uppercase tracking-[0.2em] transform hover:-translate-y-1">
-                            Checkout All <i class="fas fa-chevron-right text-[10px]"></i>
-                        </a>
-                        
-                        <div class="mt-8 pt-8 border-t border-slate-50 flex items-center justify-center gap-6 text-slate-200">
-                            <i class="fab fa-cc-visa text-3xl hover:text-slate-300 transition"></i>
-                            <i class="fab fa-cc-mastercard text-3xl hover:text-slate-300 transition"></i>
-                            <i class="fab fa-apple-pay text-3xl hover:text-slate-300 transition"></i>
-                            <i class="fab fa-google-pay text-3xl hover:text-slate-300 transition"></i>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        @else
-            <div class="text-center py-32 bg-white rounded-[4rem] shadow-sm border border-slate-100 flex flex-col items-center">
-                <div class="w-32 h-32 bg-slate-50 text-slate-100 rounded-full flex items-center justify-center mb-10">
-                    <i class="fas fa-shopping-bag text-5xl opacity-40"></i>
-                </div>
-                <h3 class="text-3xl font-black text-slate-800 tracking-tighter mb-4 italic">Empty Reserve</h3>
-                <p class="text-slate-400 font-medium mb-12 max-w-sm mx-auto leading-relaxed">Your curated collection awaits. Start exploring our latest signature drops.</p>
-                <a href="{{ route('products.index') }}" class="inline-flex py-5 px-14 bg-slate-900 text-white font-black rounded-2xl shadow-2xl hover:shadow-slate-900/30 transition no-underline uppercase tracking-[0.2em] text-[10px]">
-                    Enter Boutique
+                <h3 class="text-xl font-black text-slate-800 uppercase tracking-widest">MANIFEST NULL</h3>
+                <p class="text-slate-400 text-sm mt-2 italic font-medium">Your digital acquisition container is currently unpopulated</p>
+                <a href="{{ route('products.index') }}" class="inline-block mt-8 bg-[#2874f0] text-white px-10 py-3 rounded-sm text-xs font-black uppercase tracking-widest hover:bg-[#1266ec] transition-all no-underline shadow-lg shadow-blue-100">
+                    Browse Manifests
                 </a>
             </div>
+        @else
+            <div class="row g-4">
+                {{-- Products List --}}
+                <div class="col-lg-8">
+                    <div class="space-y-4">
+                        @foreach ($cart as $item)
+                        <div class="bg-white rounded-sm shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row items-center gap-6 group transition-all hover:shadow-md">
+                            
+                            {{-- Product Image --}}
+                            <div class="w-32 h-32 bg-slate-50 border border-slate-100 p-2 flex-shrink-0">
+                                <img src="{{ $item->product->image_url }}" 
+                                     onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($item->product->name) }}&background=f1f3f6&color=2874f0&bold=true'"
+                                     class="w-full h-full object-contain group-hover:scale-110 transition-transform">
+                            </div>
+
+                            {{-- Info --}}
+                            <div class="flex-grow space-y-2 text-center md:text-left">
+                                <h4 class="text-lg font-black text-slate-800 tracking-tight m-0 line-clamp-1">
+                                    <a href="{{ route('products.show', $item->product->slug) }}" class="no-underline text-inherit hover:text-[#2874f0] transition-colors">
+                                        {{ $item->product->name }}
+                                    </a>
+                                </h4>
+                                <div class="flex items-center justify-center md:justify-start gap-4">
+                                    <span class="text-2xl font-black text-slate-900">₹{{ number_format($item->product->price) }}</span>
+                                    @if($item->product->discount_percent > 0)
+                                        <span class="bg-green-100 text-green-700 text-[9px] font-black px-2 py-0.5 rounded uppercase">{{ $item->product->discount_percent }}% Protocol Applied</span>
+                                    @endif
+                                </div>
+                                <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Seller: SoloCart Prime Fulfillment</p>
+                            </div>
+
+                            {{-- Quantity Toggle / Actions --}}
+                            <div class="flex-shrink-0 flex flex-col items-center md:items-end gap-4 w-full md:w-auto">
+                                <div class="flex items-center gap-2 border border-slate-200 rounded-sm p-1">
+                                    <form action="{{ url('/cart/update/' . $item->id) }}" method="POST" class="m-0 flex items-center">
+                                        @csrf
+                                        <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" 
+                                               class="w-12 text-center border-0 focus:ring-0 text-sm font-black text-slate-800 p-0" 
+                                               onchange="this.form.submit()">
+                                        <button type="submit" class="p-1 px-2 hover:text-[#2874f0] transition-colors">
+                                            <i class="fas fa-sync-alt text-[10px]"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                
+                                <div class="flex gap-2">
+                                    {{-- Process Single Item (Buy Now) --}}
+                                    <a href="{{ route('checkout.index', ['product_id' => $item->product_id, 'quantity' => $item->quantity]) }}" 
+                                       title="Instant Process Protocol"
+                                       class="w-10 h-10 bg-[#fb641b]/10 text-[#fb641b] rounded-full flex items-center justify-center hover:bg-[#fb641b] hover:text-white transition-all shadow-sm">
+                                        <i class="fas fa-bolt text-xs"></i>
+                                    </a>
+
+                                    {{-- Remove Icon --}}
+                                    <form action="{{ url('/cart/remove/' . $item->id) }}" method="POST" class="m-0">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" title="Abort Acquisition"
+                                                class="w-10 h-10 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm">
+                                            <i class="fas fa-trash-alt text-xs"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Price Summary --}}
+                <div class="col-lg-4">
+                    <div class="bg-white rounded-sm shadow-sm border border-slate-100 overflow-hidden sticky top-20">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50">
+                            <h4 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400 m-0">FINANCIAL MANIFEST</h4>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div class="flex justify-between items-center text-sm font-medium">
+                                <span class="text-slate-500">Items Count (Acquisitions)</span>
+                                <span class="text-slate-900">{{ $cart->sum('quantity') }} Units</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm font-medium">
+                                <span class="text-slate-500">Gross Subtotal</span>
+                                <span class="text-slate-900 font-bold">₹{{ number_format($totalPrice) }}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm font-medium">
+                                <span class="text-slate-500">Logistics Protocol</span>
+                                <span class="text-green-600 font-black uppercase italic">FREE</span>
+                            </div>
+
+                            <div class="border-t border-dashed border-slate-200 pt-4 mt-4 flex justify-between items-center">
+                                <span class="text-lg font-black text-slate-900 uppercase italic opacity-40">Net Value</span>
+                                <span class="text-2xl font-black text-slate-900 tracking-tighter">₹{{ number_format($totalPrice) }}</span>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-green-50 border-t border-green-100">
+                            <p class="text-[9px] font-black text-green-700 text-center uppercase tracking-widest m-0">Protocol Optimized: You saved ₹450 on this manifest</p>
+                        </div>
+
+                        <div class="p-6 pt-2">
+                            <a href="{{ route('checkout.index') }}" class="block text-center bg-[#fb641b] text-white py-4 rounded-sm text-sm font-black uppercase tracking-[0.2em] shadow-xl shadow-orange-100 hover:bg-[#ff4500] transition-all no-underline">
+                                SYNCHRONIZE & CHECKOUT
+                            </a>
+                            <p class="text-[8px] font-black text-slate-300 text-center uppercase tracking-[0.2em] mt-4 italic">
+                                <i class="fas fa-shield-alt mr-1"></i> End-to-End Encryption Enabled
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         @endif
+
     </div>
 </div>
 @endsection

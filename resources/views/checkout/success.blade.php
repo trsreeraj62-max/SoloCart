@@ -1,58 +1,56 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="success-page py-20 bg-white min-h-screen flex items-center justify-center">
-    <div class="container text-center" style="max-width: 600px;">
+<div class="bg-[#f1f3f6] min-h-screen py-16 flex items-center justify-center">
+    <div class="container container-max px-4">
         
-        <div class="relative inline-block mb-10">
-            <div class="w-32 h-32 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 animate-bounce">
-                <i class="fas fa-check text-5xl"></i>
-            </div>
-            <!-- Confetti-like dots -->
-            <div class="absolute top-0 -right-4 w-4 h-4 bg-blue-400 rounded-full"></div>
-            <div class="absolute bottom-0 -left-6 w-3 h-3 bg-red-400 rounded-full"></div>
-            <div class="absolute -top-6 left-10 w-2 h-2 bg-yellow-400 rounded-full"></div>
-        </div>
-
-        <h1 class="text-5xl font-black text-slate-900 mb-4 tracking-tighter">Payment Successful!</h1>
-        <p class="text-slate-500 text-lg mb-10 leading-relaxed font-medium">
-            Thank you for your order. We've received your payment and our team is already preparing your package for delivery.
-        </p>
-
-        <div class="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 mb-10 text-left">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Order ID</div>
-                    <div class="text-xl font-black text-slate-800">#{{ $order->id }}</div>
-                </div>
-                <div class="text-right">
-                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Paid</div>
-                    <div class="text-xl font-black text-primary">${{ number_format($order->total, 2) }}</div>
-                </div>
-            </div>
-            
-            <div class="space-y-4">
-                @foreach($order->items as $item)
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-white rounded-xl p-1 border border-slate-200">
-                        <img src="{{ asset('storage/' . ($item->product->images->first()->image_path ?? '')) }}" class="w-full h-full object-contain">
+        <div class="max-w-xl mx-auto bg-white rounded-sm shadow-2xl overflow-hidden border border-slate-100 text-center">
+            <!-- Success Banner -->
+            <div class="bg-green-500 p-12 text-white relative">
+                <div class="relative z-10 animate-in zoom-in duration-500">
+                    <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
+                        <i class="fas fa-check text-green-500 text-4xl"></i>
                     </div>
-                    <div class="flex-1">
-                        <div class="text-sm font-bold text-slate-700">{{ $item->product->name }}</div>
-                        <div class="text-[10px] text-slate-400 font-bold italic">Qty: {{ $item->quantity }}</div>
+                    <h1 class="text-3xl font-black tracking-tighter uppercase m-0">TRANSACTION SECURED</h1>
+                    <p class="text-[10px] font-black uppercase tracking-[0.4em] opacity-80 mt-2">Manifest #{{ $order->id }} confirmed</p>
+                </div>
+                <!-- Abstract patterns -->
+                <div class="absolute inset-0 opacity-10 pointer-events-none">
+                    <i class="fas fa-shield-alt absolute -top-10 -right-10 text-[15rem] rotate-12"></i>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="p-10 space-y-8">
+                <div class="space-y-4">
+                    <h3 class="text-lg font-black text-slate-800 uppercase tracking-widest">Protocol Success</h3>
+                    <p class="text-sm text-slate-500 font-medium leading-relaxed">
+                        Your acquisition has been officially logged in our central archive. Our logistics team has been signaled for rapid dispatch.
+                    </p>
+                </div>
+
+                <div class="bg-slate-50 rounded-sm p-6 border border-slate-100 space-y-4">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400 font-bold uppercase tracking-widest">Acquisition Value</span>
+                        <span class="text-slate-900 font-black">₹{{ number_format($order->total) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400 font-bold uppercase tracking-widest">Destination Locked</span>
+                        <span class="text-slate-900 font-black truncate max-w-[200px]">{{ $order->address }}</span>
                     </div>
                 </div>
-                @endforeach
-            </div>
-        </div>
 
-        <div class="flex flex-col sm:flex-row gap-4">
-            <a href="{{ route('orders.index') }}" class="flex-1 py-5 bg-slate-900 text-white font-black rounded-2xl shadow-xl hover:shadow-slate-900/30 transition no-underline uppercase tracking-widest text-xs">
-                View My Orders
-            </a>
-            <a href="{{ route('home') }}" class="flex-1 py-5 bg-primary text-white font-black rounded-2xl shadow-xl hover:shadow-primary/30 transition no-underline uppercase tracking-widest text-xs">
-                Continue Shopping
-            </a>
+                <div class="flex flex-col md:flex-row gap-4">
+                    <a href="{{ route('orders.show', $order->id) }}" class="flex-1 bg-[#2874f0] text-white py-4 rounded-sm text-xs font-black uppercase tracking-widest hover:bg-[#1266ec] transition-all no-underline shadow-lg shadow-blue-100">
+                        View Manifest
+                    </a>
+                    <a href="{{ route('home') }}" class="flex-1 bg-white text-slate-900 border border-slate-200 py-4 rounded-sm text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all no-underline">
+                        Return to Hub
+                    </a>
+                </div>
+
+                <p class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] pt-4">Estimated Dispatch: Within 24 Hours</p>
+            </div>
         </div>
 
     </div>

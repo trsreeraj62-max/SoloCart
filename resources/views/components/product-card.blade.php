@@ -1,40 +1,48 @@
-<a href="{{ route('products.show', $product->slug ?? $product->id) }}" class="card block hover:shadow-xl transition-all duration-500 no-underline text-inherit group overflow-hidden bg-white" style="border-radius: 24px; border: 1px solid #f8fafc; height: 320px;">
-    <div class="product-card-img relative bg-slate-50/30 overflow-hidden" style="height: 200px;">
-        <div class="flex items-center justify-center h-full w-full p-6">
-            @if($product->images && $product->images->first())
-                <img src="{{ asset('storage/' . $product->images->first()->image_path) }}" alt="{{ $product->name }}" class="w-full h-full object-contain group-hover:scale-110 transition duration-700">
+<div class="group bg-white rounded-sm overflow-hidden transition-all duration-300 hover:shadow-xl relative flex flex-col h-full cursor-pointer border border-transparent hover:border-slate-100">
+    <!-- Clickable Container -->
+    <a href="{{ route('products.show', $product->slug ?? $product->id) }}" class="no-underline text-inherit flex flex-col h-full p-4">
+        
+        <!-- Image Area -->
+        <div class="relative w-full aspect-square mb-4 overflow-hidden flex items-center justify-center p-2">
+            @if($product->image_url)
+                <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="h-full object-contain transform transition-transform duration-700 group-hover:scale-105">
             @else
-                <img src="https://placehold.co/400x300?text=Premium+Item" alt="Placeholder" class="w-full h-full object-contain opacity-20">
+                <div class="w-full h-full bg-slate-50 flex items-center justify-center text-slate-200">
+                    <i class="fas fa-image text-4xl"></i>
+                </div>
+            @endif
+            
+            @if($product->discount_percent > 0)
+                <div class="absolute top-0 right-0">
+                    <span class="text-[10px] font-black text-white bg-green-500 px-2 py-1 rounded-bl-lg uppercase tracking-widest">{{ $product->discount_percent }}% OFF</span>
+                </div>
             @endif
         </div>
-        
-        <div class="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition duration-500"></div>
 
-        @if($product->discount_percent > 0)
-            <span class="absolute top-4 left-4 bg-red-500 text-white text-[9px] font-black px-3 py-1 rounded-full shadow-lg tracking-widest uppercase">
-                Save {{ $product->discount_percent }}%
-            </span>
-        @endif
-        
-        <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-500">
-            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-xl text-primary">
-                <i class="fas fa-plus"></i>
+        <!-- Meta Info -->
+        <div class="flex-grow">
+            <h3 class="text-sm font-bold text-slate-800 line-clamp-2 mb-1 group-hover:text-[#2874f0] transition-colors min-h-[40px]">
+                {{ $product->name }}
+            </h3>
+
+            @if(isset($product->rating) || true)
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                        {{ $product->rating ?? '4.2' }} <i class="fas fa-star text-[8px]"></i>
+                    </div>
+                    <span class="text-slate-400 text-xs font-semibold">({{ rand(100, 5000) }})</span>
+                </div>
+            @endif
+
+            <div class="flex items-center gap-3">
+                <span class="text-lg font-bold text-slate-900">₹{{ number_format($product->price) }}</span>
+                @if($product->discount_percent > 0)
+                    <span class="text-xs text-slate-400 line-through">₹{{ number_format($product->price * 1.2) }}</span>
+                    <span class="text-[11px] font-bold text-green-600">{{ $product->discount_percent }}% off</span>
+                @endif
             </div>
+
+            <!-- Trust Badge Removed -->
         </div>
-    </div>
-    
-    <div class="product-info p-6 text-center space-y-2">
-        <h3 class="font-extrabold text-slate-800 text-base leading-tight group-hover:text-primary transition line-clamp-1">
-            {{ $product->name }}
-        </h3>
-        
-        <div class="flex flex-col items-center justify-center gap-0.5">
-             <div class="text-xl font-black text-slate-900 tracking-tighter">
-                ${{ number_format($product->price * (1 - ($product->discount_percent/100)), 2) }}
-             </div>
-             @if($product->discount_percent > 0)
-                <span class="text-[10px] text-slate-300 line-through font-bold">${{ number_format($product->price, 2) }}</span>
-             @endif
-        </div>
-    </div>
-</a>
+    </a>
+</div>

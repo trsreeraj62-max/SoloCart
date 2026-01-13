@@ -59,6 +59,14 @@
                     <td class="p-4 text-right">
                         @if($user->role !== 'admin')
                         <div class="flex items-center justify-end gap-3">
+                            {{-- View Icon --}}
+                            <button type="button" 
+                                    class="text-blue-400 hover:text-blue-600 transition bg-transparent border-0 p-0" 
+                                    title="View Signal Manifest"
+                                    onclick="showUserManifest('{{ $user->name }}', '{{ $user->email }}', '{{ $user->phone ?? 'N/A' }}', '{{ $user->address ?? 'N/A' }}', '{{ $user->status }}', '{{ $user->last_login_at ? $user->last_login_at->format('d M Y, h:i A') : 'NEVER' }}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+
                             <form action="{{ route('admin.users.suspend', $user->id) }}" method="POST">
                                 @csrf
                                 <button type="submit" class="text-yellow-500 hover:text-yellow-600 transition" title="{{ $user->status === 'suspended' ? 'Activate' : 'Suspend' }}">
@@ -88,3 +96,74 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<!-- User Detail Modal -->
+<div id="userModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform animate-in slide-in-from-bottom duration-300">
+        <div class="p-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+            <h3 class="text-sm font-black uppercase tracking-widest text-[#2874f0]">User Manifest</h3>
+            <button onclick="closeUserModal()" class="text-slate-400 hover:text-rose-500 transition"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-8 space-y-6">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 bg-[#2874f0] text-white rounded-full flex items-center justify-center text-2xl font-black shadow-lg" id="modalInitials">U</div>
+                <div>
+                    <h4 class="text-xl font-black text-slate-800 tracking-tighter" id="modalName">Name</h4>
+                    <p class="text-xs font-bold text-slate-400 uppercase" id="modalEmail">Email</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-6 pt-4 border-t border-slate-50">
+                <div>
+                    <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Mobile Terminal</p>
+                    <p class="text-xs font-bold text-slate-700" id="modalPhone">Phone</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Account Status</p>
+                    <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded" id="modalStatusBadge">Active</span>
+                </div>
+                <div class="col-12">
+                    <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Geographic Vector</p>
+                    <p class="text-xs font-bold text-slate-700 italic" id="modalAddress">Address</p>
+                </div>
+                <div class="col-12">
+                    <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Last Signal Detected</p>
+                    <p class="text-xs font-bold text-slate-700" id="modalLastLogin">Last Login</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-4 bg-slate-50 text-center">
+            <button onclick="closeUserModal()" class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#2874f0] transition">Close Manifest</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function showUserManifest(name, email, phone, address, status, lastLogin) {
+    document.getElementById('modalName').innerText = name;
+    document.getElementById('modalEmail').innerText = email;
+    document.getElementById('modalPhone').innerText = phone;
+    document.getElementById('modalAddress').innerText = address;
+    document.getElementById('modalLastLogin').innerText = lastLogin;
+    document.getElementById('modalInitials').innerText = name.charAt(0);
+    
+    const badge = document.getElementById('modalStatusBadge');
+    badge.innerText = status;
+    badge.className = status === 'suspended' 
+        ? 'text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-rose-100 text-rose-600'
+        : 'text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-green-100 text-green-600';
+    
+    document.getElementById('userModal').classList.remove('hidden');
+}
+
+function closeUserModal() {
+    document.getElementById('userModal').classList.add('hidden');
+}
+
+// Close on escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeUserModal();
+});
+</script>
+@endpush

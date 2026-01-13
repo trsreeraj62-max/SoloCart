@@ -1,88 +1,132 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="contact-page bg-slate-50 min-h-screen py-20">
-    <div class="container" style="max-width: 1100px; margin: 0 auto; padding: 0 1.5rem;">
-        <div class="text-center mb-16">
-            <h1 class="text-5xl font-black text-slate-900 mb-4">Contact Us</h1>
-            <p class="text-slate-500 text-lg">Have questions? We'd love to hear from you.</p>
-        </div>
+<div class="bg-[#f1f3f6] min-h-screen py-12">
+    <div class="container container-max px-4">
+        
+        <div class="row g-5">
+            <!-- Contact Info -->
+            <div class="col-lg-5">
+                <div class="bg-white p-10 rounded-sm shadow-sm border border-slate-100 h-full flex flex-col justify-between">
+                    <div class="space-y-6">
+                        <span class="text-[#2874f0] font-black text-xs uppercase tracking-[0.3em]">Communication Protocol</span>
+                        <h2 class="text-4xl font-black text-slate-900 tracking-tighter italic">Connect With US.</h2>
+                        <p class="text-slate-500 font-medium">Have questions or feedback? Our operative team is standing by to assist with your acquisition inquiries.</p>
+                        
+                        <div class="space-y-8 pt-6">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 bg-slate-50 border border-slate-100 rounded flex items-center justify-center text-[#2874f0] mt-1"><i class="fas fa-map-marker-alt"></i></div>
+                                <div>
+                                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Central Ops</p>
+                                    <p class="text-sm font-bold text-slate-800">102 Sky Tower, Tech Park Road,<br>Bangalore, KA 560001</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 bg-slate-50 border border-slate-100 rounded flex items-center justify-center text-[#2874f0] mt-1"><i class="fas fa-phone"></i></div>
+                                <div>
+                                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Direct Line</p>
+                                    <p class="text-sm font-bold text-slate-800">+91 1800-SOLO-CART</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 bg-slate-50 border border-slate-100 rounded flex items-center justify-center text-[#2874f0] mt-1"><i class="fas fa-envelope"></i></div>
+                                <div>
+                                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Digital Signal</p>
+                                    <p class="text-sm font-bold text-slate-800">ops@solocart.premium</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-        <div class="grid md:grid-cols-12 gap-8">
-            <!-- Form Card -->
-            <div class="md:col-span-7">
-                <div class="bg-white p-10 rounded-[2rem] shadow-xl border border-slate-100">
-                    <form action="#" method="POST" class="space-y-6">
-                        <div class="grid grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-2">Your Name</label>
-                                <input type="text" name="name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition" required>
+                    <div class="pt-10 border-t border-slate-50 mt-10">
+                        <p class="text-[10px] font-black uppercase text-slate-300 tracking-widest mb-4">Social Signal Nodes</p>
+                        <div class="flex gap-4">
+                            <a href="#" class="w-10 h-10 bg-[#2874f0] text-white rounded flex items-center justify-center hover:bg-[#1266ec] transition-colors"><i class="fab fa-facebook-f text-sm"></i></a>
+                            <a href="#" class="w-10 h-10 bg-[#2874f0] text-white rounded flex items-center justify-center hover:bg-[#1266ec] transition-colors"><i class="fab fa-instagram text-sm"></i></a>
+                            <a href="#" class="w-10 h-10 bg-[#2874f0] text-white rounded flex items-center justify-center hover:bg-[#1266ec] transition-colors"><i class="fab fa-twitter text-sm"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Form -->
+            <div class="col-lg-7">
+                <div class="bg-white p-10 rounded-sm shadow-sm border border-slate-100">
+                    <form id="contactForm" action="/api/contact" method="POST" class="space-y-6">
+                        @csrf
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Your Name</label>
+                                <input type="text" name="name" required class="w-full bg-slate-50 border border-slate-200 py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#2874f0] focus:bg-white transition-all">
                             </div>
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
-                                <input type="email" name="email" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition" required>
+                            <div class="col-md-6">
+                                <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Email Address</label>
+                                <input type="email" name="email" required class="w-full bg-slate-50 border border-slate-200 py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#2874f0] focus:bg-white transition-all">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Subject</label>
-                            <input type="text" name="subject" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition" required>
+                            <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Subject</label>
+                            <input type="text" name="subject" required class="w-full bg-slate-50 border border-slate-200 py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#2874f0] focus:bg-white transition-all">
                         </div>
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Message</label>
-                            <textarea name="message" rows="5" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition" required></textarea>
+                            <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Message Protocol</label>
+                            <textarea name="message" rows="6" required class="w-full bg-slate-50 border border-slate-200 py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#2874f0] focus:bg-white transition-all" placeholder="Enter your query here..."></textarea>
                         </div>
-                        <button type="submit" class="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-primary/30 transition transform hover:-translate-y-1">
-                            Send Message <i class="fas fa-paper-plane ml-2"></i>
+                        <button type="submit" class="bg-[#2874f0] text-white px-10 py-4 rounded-sm text-sm font-black uppercase tracking-widest hover:bg-[#1266ec] w-full md:w-auto shadow-lg shadow-blue-100">
+                            Process Transmission
                         </button>
                     </form>
                 </div>
             </div>
 
-            <!-- Info Column -->
-            <div class="md:col-span-5 flex flex-col justify-between">
-                <div class="space-y-8">
-                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
-                        <h3 class="text-xl font-bold mb-6 text-slate-800">Other ways to reach us</h3>
-                        
-                        <div class="space-y-6">
-                            <div class="flex items-start gap-4">
-                                <div class="bg-blue-50 p-4 rounded-2xl text-blue-600"><i class="fas fa-envelope"></i></div>
-                                <div>
-                                    <div class="text-xs font-bold text-slate-400 uppercase mb-1">Email us</div>
-                                    <div class="font-bold text-slate-700">support@solocart.com</div>
-                                </div>
-                            </div>
+            <script>
+            document.getElementById('contactForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const form = this;
+                const formData = new FormData(form);
+                const btn = form.querySelector('button[type="submit"]');
+                const originalText = btn.innerText;
+                
+                btn.disabled = true;
+                btn.innerText = 'Transmitting...';
+                
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        window.showToast(data.message || "Message Received. We will get back to you soon!", 'success');
+                        form.reset();
+                    } else {
+                        window.showToast(data.message || "Transmission failed", 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    window.showToast("An error occurred during transmission", 'error');
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                });
+            });
+            </script>
+        </div>
 
-                            <div class="flex items-start gap-4">
-                                <div class="bg-purple-50 p-4 rounded-2xl text-purple-600"><i class="fas fa-phone"></i></div>
-                                <div>
-                                    <div class="text-xs font-bold text-slate-400 uppercase mb-1">Call us</div>
-                                    <div class="font-bold text-slate-700">+1 (555) 123-4567</div>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-4">
-                                <div class="bg-emerald-50 p-4 rounded-2xl text-emerald-600"><i class="fas fa-map-marker-alt"></i></div>
-                                <div>
-                                    <div class="text-xs font-bold text-slate-400 uppercase mb-1">Visit us</div>
-                                    <div class="font-bold text-slate-700">123 Commerce St, Shopping City, SC 12345</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Socials Card -->
-                    <div class="bg-slate-900 p-8 rounded-[2rem] text-white">
-                        <h4 class="font-bold mb-4">Follow our journey</h4>
-                        <div class="flex gap-4">
-                            <a href="#" class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition"><i class="fab fa-facebook-f"></i></a>
-                            <a href="#" class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition"><i class="fab fa-twitter"></i></a>
-                            <a href="#" class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition"><i class="fab fa-instagram"></i></a>
-                        </div>
-                    </div>
-                </div>
+        <!-- Mini Map Placeholder / Banner -->
+        <div class="mt-20 h-80 rounded-sm overflow-hidden shadow-sm relative grayscale hover:grayscale-0 transition-all duration-700">
+            <img src="https://images.unsplash.com/photo-1423666639041-f56000c27a9a?q=80&w=1470&auto=format&fit=crop" class="w-full h-full object-cover" alt="Support Banner">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent flex items-end p-12">
+                <p class="text-white text-3xl font-black italic tracking-tighter tracking-widest">GLOBAL OPERATIVE SUPPORT</p>
             </div>
         </div>
+
     </div>
 </div>
 @endsection

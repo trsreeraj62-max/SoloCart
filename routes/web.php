@@ -19,13 +19,17 @@ Route::get('/contact', function () { return view('contact'); })->name('contact')
 Route::middleware(['auth'])->group(function () {
     Route::get('/cart', [CartWebController::class, 'index'])->name('cart.index');
     Route::post('/cart/add', [CartWebController::class, 'add'])->name('cart.add');
+    Route::post('/cart/add/{product_id}', [CartWebController::class, 'addByUrl']);
+    Route::post('/cart/update/{id}', [CartWebController::class, 'updateQuantity']);
     Route::delete('/cart/remove', [CartWebController::class, 'remove'])->name('cart.remove');
-    Route::delete('/cart/remove', [CartWebController::class, 'remove'])->name('cart.remove');
+    Route::delete('/cart/remove/{id}', [CartWebController::class, 'removeById']);
     
     Route::get('/checkout', [OrderWebController::class, 'checkout'])->name('checkout.index');
     Route::get('/checkout/single', [OrderWebController::class, 'checkout'])->name('checkout.single');
+    Route::get('/checkout/payment', [OrderWebController::class, 'paymentPage'])->name('checkout.payment');
+    Route::post('/checkout/success', [OrderWebController::class, 'confirmSimplifiedOrder'])->name('checkout.success.post');
     Route::post('/checkout/process', [OrderWebController::class, 'store'])->name('checkout.store');
-    Route::get('/checkout/pay/{id}', [OrderWebController::class, 'paymentPage'])->name('checkout.pay');
+    Route::get('/checkout/pay/{id}', [OrderWebController::class, 'paymentPageLegacy'])->name('checkout.pay');
     Route::post('/checkout/pay/{id}/confirm', [OrderWebController::class, 'confirmPayment'])->name('checkout.confirm');
 
     Route::get('/orders', [OrderWebController::class, 'index'])->name('orders.index');
@@ -36,18 +40,21 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/orders/{id}/return', [OrderWebController::class, 'returnOrder'])->name('orders.return');
     Route::get('/orders/{id}/invoice', [OrderWebController::class, 'downloadInvoice'])->name('orders.invoice');
     
-    Route::get('/profile', function () { return view('profile.edit'); })->name('profile.edit');
+    Route::get('/profile', function () { return view('profile.edit', ['user' => auth()->user()]); })->name('profile.edit');
     Route::post('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
 });
 
 // Auth Pages
-Route::get('/login', function () { return view('auth.login'); })->name('login');
-Route::post('/login', [App\Http\Controllers\AuthWebController::class, 'login']);
-Route::get('/register', function () { return view('auth.register'); })->name('register');
-Route::post('/register', [App\Http\Controllers\AuthWebController::class, 'register']);
-Route::get('/otp-verify', function () { return view('auth.otp'); })->name('otp.verify');
-Route::post('/otp-verify', [App\Http\Controllers\AuthWebController::class, 'verifyOtp']);
-Route::post('/logout', [App\Http\Controllers\AuthWebController::class, 'logout'])->name('logout');
+Route::middleware(['guest'])->group(function () {
+    Route::get('/login', function () { return view('auth.login'); })->name('login');
+    Route::post('/login', [App\Http\Controllers\AuthWebController::class, 'login']);
+    Route::get('/register', function () { return view('auth.register'); })->name('register');
+    Route::post('/register', [App\Http\Controllers\AuthWebController::class, 'register']);
+    Route::get('/otp-verify', function () { return view('auth.otp'); })->name('otp.verify');
+    Route::post('/otp-verify', [App\Http\Controllers\AuthWebController::class, 'verifyOtp']);
+});
+
+Route::post('/logout', [App\Http\Controllers\AuthWebController::class, 'logout'])->name('logout')->middleware('auth');
 
 // Admin Panel
 Route::prefix('admin')->name('admin.')->group(function () {

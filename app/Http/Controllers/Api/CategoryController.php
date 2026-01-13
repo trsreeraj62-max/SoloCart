@@ -12,7 +12,11 @@ class CategoryController extends ApiController
      */
     public function index()
     {
-        $categories = Category::all();
-        return $this->success($categories, "Categories retrieved");
+        try {
+            $categories = Category::all();
+            return $this->success($categories, "Categories retrieved");
+        } catch (\Exception $e) {
+            return $this->error("Failed to retrieve categories", 500);
+        }
     }
 }

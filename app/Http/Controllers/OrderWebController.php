@@ -97,7 +97,9 @@ class OrderWebController extends Controller
             
             return view('checkout.index', array_merge($fees, [
                 'items' => $items,
+                'cart' => (object)$items, // Compatibility with user's foreach($cart as $item)
                 'user' => $user,
+                'totalPrice' => $fees['grand_total'],
                 'isSingle' => $isSingle,
                 'singleProductId' => $singleProductId,
                 'singleQuantity' => $singleQuantity
@@ -165,7 +167,32 @@ class OrderWebController extends Controller
         }
     }
 
-    public function paymentPage($id) {
+    public function paymentPage(Request $request) {
+        try {
+            $user = Auth::user();
+            $cart = $user->cart()->with('items.product')->first();
+            if (!$cart || $cart->items->count() == 0) return redirect()->route('cart.index');
+            
+            $subtotal = 0;
+            foreach($cart->items as $item) {
+                $subtotal += $item->product->price * $item->quantity;
+            }
+            $fees = $this->orderService->calculateFees($subtotal);
+            
+            // Store address info in session from GET params
+            session(['checkout_address' => $request->only(['name', 'address', 'phone'])]);
+
+            return view('checkout.payment', [
+                'order' => null, // Blade expects $order, but user template doesn't use it much or we can Mock it
+                'totalPrice' => $fees['grand_total']
+            ]);
+        } catch (\Exception $e) {
+             Log::error('Payment Page Error: ' . $e->getMessage());
+             return redirect()->route('orders.index')->with('error', 'Unable to load payment page.');
+        }
+    }
+
+    public function paymentPageLegacy($id) {
         try {
             $order = Auth::user()->orders()->findOrFail($id);
             if($order->payment_status === 'paid') return redirect()->route('orders.show', $order->id);
@@ -174,6 +201,44 @@ class OrderWebController extends Controller
         } catch (\Exception $e) {
              Log::error('Payment Page Error: ' . $e->getMessage());
              return redirect()->route('orders.index')->with('error', 'Unable to load payment page.');
+        }
+    }
+
+    public function confirmSimplifiedOrder(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $addressData = session('checkout_address', []);
+            $cart = $user->cart()->with('items.product')->first();
+            
+            if (!$cart || $cart->items->count() == 0) return redirect()->route('home');
+
+            $itemsData = [];
+            $subtotal = 0;
+            foreach($cart->items as $item) {
+                $itemsData[] = [
+                    'product_id' => $item->product_id,
+                    'quantity' => $item->quantity,
+                    'price' => $item->product->price
+                ];
+                $subtotal += $item->product->price * $item->quantity;
+            }
+
+            $order = $this->orderService->createOrder($user, [
+                'subtotal' => $subtotal,
+                'address' => $addressData['address'] ?? $user->address ?? 'No Address Provided',
+                'payment_method' => $request->input('method', 'cod'),
+                'clear_cart' => true
+            ], $itemsData);
+
+            if ($request->input('method') != 'cod') {
+                $order->update(['payment_status' => 'paid']); // Mock payment success
+            }
+
+            return view('checkout.success', compact('order'));
+        } catch (\Exception $e) {
+            Log::error('Simplified Order Error: ' . $e->getMessage());
+            return redirect()->route('home')->with('error', 'Order failed.');
         }
     }
 
@@ -208,12 +273,6 @@ class OrderWebController extends Controller
             $order = Auth::user()->orders()->findOrFail($id);
             if (in_array($order->status, ['pending', 'approved', 'packed'])) {
                 $this->orderService->updateStatus($order, 'cancelled');
-                
-                // Restore stock
-                foreach($order->items as $item) {
-                    $item->product->increment('stock', $item->quantity);
-                }
-                
                 return back()->with('success', 'Order has been cancelled.');
             }
             return back()->with('error', 'Order cannot be cancelled at this stage.');

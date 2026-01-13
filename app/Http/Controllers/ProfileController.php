@@ -15,9 +15,13 @@ class ProfileController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'phone' => 'nullable|string|max:15',
+            'address' => 'nullable|string|max:500',
         ]);
 
         $user->name = $request->name;
+        $user->phone = $request->phone;
+        $user->address = $request->address;
 
         if ($request->hasFile('profile_photo')) {
             // Delete old photo

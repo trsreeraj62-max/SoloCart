@@ -1,122 +1,116 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="payment-page py-12 bg-slate-50 min-h-screen">
-    <div class="container" style="max-width: 900px; margin: 0 auto; padding: 0 1.5rem;">
+<div class="bg-[#f1f3f6] min-h-screen py-8">
+    <div class="container container-max px-4">
         
-        <div class="flex items-center gap-4 mb-10">
-            <h1 class="text-3xl font-black text-slate-800 m-0">Payment Options</h1>
-            <div class="flex-1 h-px bg-slate-200"></div>
-            <div class="flex items-center gap-2 text-slate-400 font-bold text-sm">
-                <span class="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px]"><i class="fas fa-check"></i></span>
-                Summary
-                <span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">2</span>
-                Payment
+        <!-- Step Indicator -->
+        <div class="flex items-center justify-center mb-8 gap-4 md:gap-10">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold shadow-sm"><i class="fas fa-check text-[10px]"></i></span>
+                <span class="text-xs font-black uppercase tracking-widest text-slate-400">Summary</span>
+            </div>
+            <div class="w-12 md:w-20 h-0.5 bg-green-200"></div>
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-full bg-[#2874f0] text-white flex items-center justify-center font-bold shadow-lg">2</span>
+                <span class="text-xs font-black uppercase tracking-widest text-slate-800">Payment</span>
+            </div>
+            <div class="w-12 md:w-20 h-0.5 bg-slate-200"></div>
+            <div class="flex items-center gap-2 opacity-30">
+                <span class="w-8 h-8 rounded-full bg-slate-300 text-white flex items-center justify-center font-bold">3</span>
+                <span class="text-xs font-black uppercase tracking-widest text-slate-400">Finish</span>
             </div>
         </div>
 
-        <div class="grid lg:grid-cols-12 gap-8">
-            <!-- Left: Options -->
-            <div class="lg:col-span-8 space-y-4">
-                <form id="paymentForm" action="{{ route('checkout.confirm', $order->id) }}" method="POST">
-                    @csrf
-                    
-                    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+        <form action="{{ route('checkout.success.post') }}" method="POST">
+            @csrf
+            <div class="row g-4 justify-center">
+                
+                <div class="col-lg-8">
+                    <div class="space-y-4">
                         
-                        <!-- UPI -->
-                        <label class="payment-option p-8 flex items-start gap-6 cursor-pointer hover:bg-slate-50 transition border-b border-slate-50">
-                            <input type="radio" name="payment_method" value="upi" class="mt-1.5 w-5 h-5 accent-primary" checked>
-                            <div class="flex-1">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="font-black text-slate-800 text-lg uppercase tracking-tight">UPI (Google Pay / PhonePe)</span>
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/UPI-Logo.png/600px-UPI-Logo.png" class="h-4">
-                                </div>
-                                <p class="text-slate-400 text-sm font-medium">Fast & Secure payment using any UPI App.</p>
-                                
-                                <div class="mt-6 vpa-input scale-y-0 origin-top h-0 transition-all opacity-0">
-                                    <input type="text" placeholder="Enter UPI ID (e.g. user@okaxis)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary text-sm font-bold">
-                                    <button type="button" class="mt-3 text-primary font-black text-xs uppercase tracking-widest">Verify ID</button>
-                                </div>
+                        <!-- Header -->
+                        <div class="bg-white rounded-sm shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div>
+                                <h1 class="text-2xl font-black text-slate-900 tracking-tighter m-0">PAYMENT GATEWAY</h1>
+                                <p class="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] mt-1">Select your preferred transaction protocol</p>
                             </div>
-                        </label>
-
-                        <!-- Cards -->
-                        <label class="payment-option p-8 flex items-start gap-6 cursor-pointer hover:bg-slate-50 transition border-b border-slate-50">
-                            <input type="radio" name="payment_method" value="card" class="mt-1.5 w-5 h-5 accent-primary">
-                            <div class="flex-1">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="font-black text-slate-800 text-lg uppercase tracking-tight">Credit / Debit Cards</span>
-                                    <div class="flex gap-2">
-                                        <i class="fab fa-cc-visa text-slate-400 text-xl"></i>
-                                        <i class="fab fa-cc-mastercard text-slate-400 text-xl"></i>
-                                    </div>
-                                </div>
-                                <p class="text-slate-400 text-sm font-medium">Visa, Mastercard, RuPay & more.</p>
+                            <div class="bg-slate-50 border border-slate-100 rounded-sm px-6 py-3 text-center">
+                                <p class="text-[9px] font-black text-slate-400 uppercase mb-1">DUE AMOUNT</p>
+                                <p class="text-xl font-black text-[#2874f0] m-0">₹{{ number_format($totalPrice) }}</p>
                             </div>
-                        </label>
-
-                        <!-- Netbanking -->
-                        <label class="payment-option p-8 flex items-start gap-6 cursor-pointer hover:bg-slate-50 transition border-b border-slate-50">
-                            <input type="radio" name="payment_method" value="netbanking" class="mt-1.5 w-5 h-5 accent-primary">
-                            <div class="flex-1">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="font-black text-slate-800 text-lg uppercase tracking-tight">Net Banking</span>
-                                    <i class="fas fa-university text-slate-400 text-xl"></i>
-                                </div>
-                                <p class="text-slate-400 text-sm font-medium">Pay via your preferred bank account.</p>
-                            </div>
-                        </label>
-
-                        <!-- COD -->
-                        <label class="payment-option p-8 flex items-start gap-6 cursor-pointer hover:bg-slate-50 transition">
-                            <input type="radio" name="payment_method" value="cod" class="mt-1.5 w-5 h-5 accent-primary">
-                            <div class="flex-1">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="font-black text-slate-800 text-lg uppercase tracking-tight">Cash on Delivery</span>
-                                    <i class="fas fa-money-bill-wave text-slate-400 text-xl"></i>
-                                </div>
-                                <p class="text-slate-400 text-sm font-medium">Pay when your order arrives.</p>
-                            </div>
-                        </label>
-
-                    </div>
-
-                    <button type="submit" class="w-full mt-8 py-5 bg-primary text-white font-black rounded-[2rem] shadow-2xl hover:shadow-primary/40 transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-sm transform hover:-translate-y-1">
-                        Finish Payment <i class="fas fa-lock"></i>
-                    </button>
-                </form>
-            </div>
-
-            <!-- Right: Tiny Summary -->
-            <div class="lg:col-span-4">
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
-                    <h4 class="text-slate-400 uppercase text-[10px] font-black tracking-widest mb-4">You're Paying</h4>
-                    <div class="text-4xl font-black text-slate-900 mb-2 tracking-tighter italic">${{ number_format($order->total, 2) }}</div>
-                    <p class="text-xs text-slate-400 font-bold mb-6">Order ID: #{{ $order->id }}</p>
-                    
-                    <div class="h-px bg-slate-50 w-full mb-6"></div>
-                    
-                    <div class="space-y-3">
-                        @foreach($order->items as $item)
-                        <div class="flex justify-between text-xs font-bold text-slate-600">
-                            <span>{{ Str::limit($item->product->name, 20) }}</span>
-                            <span>x{{ $item->quantity }}</span>
                         </div>
-                        @endforeach
+
+                        <!-- Payment Methods -->
+                        <div class="bg-white rounded-sm shadow-sm border border-slate-100 overflow-hidden">
+                            <div class="divide-y divide-slate-100">
+                                
+                                {{-- PhonePe/UPI --}}
+                                <label class="p-6 flex items-start gap-4 cursor-pointer hover:bg-slate-50 transition-colors group">
+                                    <input type="radio" name="method" value="upi" checked class="mt-1.5 w-4 h-4 text-[#2874f0] border-slate-300 focus:ring-[#2874f0]">
+                                    <div class="flex-grow">
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-sm font-bold text-slate-800 uppercase tracking-wide">UPI Protocol (Instant)</span>
+                                            <span class="bg-green-100 text-green-700 text-[9px] font-black px-2 mt-0.5 rounded uppercase">Optimized</span>
+                                        </div>
+                                        <p class="text-xs text-slate-400 mt-1">PhonePe, Google Pay, BHIM, etc. Highly recommended.</p>
+                                    </div>
+                                    <div class="flex gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
+                                        <i class="fab fa-google-pay text-2xl"></i>
+                                        <i class="fas fa-university text-xl"></i>
+                                    </div>
+                                </label>
+
+                                {{-- Card --}}
+                                <label class="p-6 flex items-start gap-4 cursor-pointer hover:bg-slate-50 transition-colors group opacity-60 grayscale">
+                                    <input type="radio" name="method" value="card" disabled class="mt-1.5 w-4 h-4 text-[#2874f0] border-slate-300 focus:ring-[#2874f0]">
+                                    <div class="flex-grow">
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-sm font-bold text-slate-800 uppercase tracking-wide">Credit / Debit Cards</span>
+                                            <span class="bg-slate-100 text-slate-500 text-[9px] font-black px-2 mt-0.5 rounded uppercase italic">Maintenance</span>
+                                        </div>
+                                        <p class="text-xs text-slate-400 mt-1">Visa, Mastercard, RuPay & More. Currently unavailable.</p>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <i class="fab fa-cc-visa text-2xl"></i>
+                                        <i class="fab fa-cc-mastercard text-2xl"></i>
+                                    </div>
+                                </label>
+
+                                {{-- COD --}}
+                                <label class="p-6 flex items-start gap-4 cursor-pointer hover:bg-slate-50 transition-colors group">
+                                    <input type="radio" name="method" value="cod" class="mt-1.5 w-4 h-4 text-[#2874f0] border-slate-300 focus:ring-[#2874f0]">
+                                    <div class="flex-grow">
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-sm font-bold text-slate-800 uppercase tracking-wide">Collection on Arrival (COD)</span>
+                                        </div>
+                                        <p class="text-xs text-slate-400 mt-1">Cash or QR payment at your location. +₹40 handling may apply.</p>
+                                    </div>
+                                    <i class="fas fa-hand-holding-usd text-2xl text-slate-200"></i>
+                                </label>
+
+                            </div>
+                        </div>
+
+                        <!-- Confirmation Button -->
+                        <div class="bg-white rounded-sm shadow-xl border border-slate-100 p-8 flex flex-col items-center">
+                            <div class="text-center mb-6 max-w-sm">
+                                <i class="fas fa-shield-alt text-[#2874f0] text-3xl mb-4"></i>
+                                <h4 class="text-sm font-black text-slate-800 uppercase tracking-widest leading-loose">Secure Terminal Confirmation</h4>
+                                <p class="text-[11px] text-slate-400 leading-relaxed italic">By clicking below, you authorize the generation of this order manifest and agree to our Transactional Protocols.</p>
+                            </div>
+                            <button type="submit" class="bg-[#fb641b] text-white px-16 py-4 rounded-sm text-sm font-black uppercase tracking-[0.3em] shadow-2xl shadow-orange-200 hover:bg-[#ff4500] hover:scale-105 transition-all">
+                                CONFIRM & PAY ₹{{ number_format($totalPrice) }}
+                            </button>
+                            <p class="text-[9px] font-bold text-slate-300 mt-6 uppercase tracking-widest"><i class="fas fa-lock mr-2"></i> End-to-End Cryptographic Protocol</p>
+                        </div>
+
                     </div>
                 </div>
+
             </div>
-        </div>
+        </form>
 
     </div>
 </div>
-
-<style>
-    .payment-option input:checked + div .vpa-input {
-        scale-y: 1;
-        height: auto;
-        opacity: 1;
-        margin-top: 1.5rem;
-    }
-</style>
 @endsection

@@ -16,6 +16,7 @@ class User extends Authenticatable
         'email',
         'password',
         'phone',
+        'address',
         'role',
         'profile_photo',
         'last_login_at',
@@ -43,5 +44,12 @@ class User extends Authenticatable
     public function cart()
     {
         return $this->hasOne(Cart::class);
+    }
+    public function getProfilePhotoUrlAttribute()
+    {
+        if ($this->profile_photo) {
+            return asset('storage/' . $this->profile_photo);
+        }
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=2874f0&color=ffffff&bold=true';
     }
 }

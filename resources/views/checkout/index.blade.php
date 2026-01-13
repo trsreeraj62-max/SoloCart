@@ -1,122 +1,134 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="checkout-page py-12 bg-slate-50 min-h-screen">
-    <div class="container" style="max-width: 1100px; margin: 0 auto; padding: 0 1.5rem;">
+<div class="bg-[#f1f3f6] min-h-screen py-8">
+    <div class="container container-max px-4">
         
-        <div class="flex items-center gap-4 mb-10">
-            <h1 class="text-3xl font-black text-slate-800 m-0">Order Summary</h1>
-            <div class="flex-1 h-px bg-slate-200"></div>
-            <div class="flex items-center gap-2 text-slate-400 font-bold text-sm">
-                <span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">1</span>
-                Summary
-                <span class="w-6 h-6 rounded-full bg-white border border-slate-200 text-slate-400 flex items-center justify-center text-[10px]">2</span>
-                Payment
+        <!-- Step Indicator -->
+        <div class="flex items-center justify-center mb-8 gap-4 md:gap-10">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-full bg-[#2874f0] text-white flex items-center justify-center font-bold shadow-lg">1</span>
+                <span class="text-xs font-black uppercase tracking-widest text-slate-800">Summary</span>
+            </div>
+            <div class="w-12 md:w-20 h-0.5 bg-slate-200"></div>
+            <div class="flex items-center gap-2 opacity-30">
+                <span class="w-8 h-8 rounded-full bg-slate-300 text-white flex items-center justify-center font-bold">2</span>
+                <span class="text-xs font-black uppercase tracking-widest text-slate-400">Payment</span>
+            </div>
+            <div class="w-12 md:w-20 h-0.5 bg-slate-200"></div>
+            <div class="flex items-center gap-2 opacity-30">
+                <span class="w-8 h-8 rounded-full bg-slate-300 text-white flex items-center justify-center font-bold">3</span>
+                <span class="text-xs font-black uppercase tracking-widest text-slate-400">Finish</span>
             </div>
         </div>
 
-        <form action="{{ route('checkout.store') }}" method="POST">
-            @csrf
-            
-            @if(isset($isSingle) && $isSingle)
-                <input type="hidden" name="product_id" value="{{ $singleProductId }}">
-                <input type="hidden" name="quantity" value="{{ $singleQuantity }}">
-            @endif
-            <input type="hidden" name="grand_total" value="{{ $grandTotal }}">
-            {{-- Default hidden payment method to move to next step --}}
-            <input type="hidden" name="payment_method" value="pending">
-
-            <div class="grid lg:grid-cols-12 gap-10 items-start">
-                
-                <!-- Left: Product Details & Address -->
-                <div class="lg:col-span-8 space-y-6">
-                    
-                    <!-- Products -->
-                    <div class="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-                        <h3 class="text-xl font-black mb-6 flex items-center gap-3">
-                            <i class="fas fa-shopping-bag text-primary"></i> 
-                            Review Items ({{ count($items) }})
-                        </h3>
-                        <div class="divide-y divide-slate-50">
-                            @foreach($items as $item)
-                            <div class="py-6 flex gap-6 items-center">
-                                <div class="w-20 h-20 bg-slate-50 rounded-2xl p-2 flex-shrink-0">
-                                    @if($item->product->images->first())
-                                        <img src="{{ asset('storage/' . $item->product->images->first()->image_path) }}" class="w-full h-full object-contain">
-                                    @else
-                                        <img src="https://placehold.co/100x100" class="w-full h-full object-contain opacity-20">
-                                    @endif
-                                </div>
-                                <div class="flex-1">
-                                    <h4 class="font-bold text-slate-800 text-lg mb-1">{{ $item->product->name }}</h4>
-                                    <p class="text-sm text-slate-400 font-medium">Quantity: <span class="text-slate-700">{{ $item->quantity }}</span></p>
-                                </div>
-                                <div class="text-right">
-                                    <div class="font-black text-slate-900">${{ number_format($item->price * $item->quantity, 2) }}</div>
-                                    <div class="text-[10px] text-slate-400 font-bold">${{ number_format($item->price, 2) }} each</div>
-                                </div>
-                            </div>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    <!-- Address -->
-                    <div class="bg-white rounded-[2rem] p-10 shadow-sm border border-slate-100">
-                        <h3 class="text-xl font-black mb-6 flex items-center gap-3">
-                            <i class="fas fa-map-marker-alt text-primary"></i> 
-                            Delivery Address
-                        </h3>
-                        <div class="relative">
-                            <textarea name="address" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 focus:ring-2 focus:ring-primary outline-none transition text-slate-700 font-medium h-32" placeholder="Street name, House No, Landmark, City, State, ZIP..." required>{{ old('address', $user->address ?? '') }}</textarea>
-                        </div>
-                        <p class="mt-4 text-xs text-slate-400 font-bold italic">Safe delivery ensured by SoloCart Express.</p>
-                    </div>
-
-                </div>
-
-                <!-- Right: Price Details -->
-                <div class="lg:col-span-4 lg:sticky lg:top-24">
-                    <div class="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100">
-                        <h3 class="text-2xl font-black mb-8 text-slate-900 uppercase tracking-tighter italic">Price Details</h3>
+        <form action="{{ route('checkout.payment') }}" method="GET">
+            <div class="row g-4">
+                <!-- Left Side: Address form -->
+                <div class="col-lg-8">
+                    <div class="space-y-4">
                         
-                        <div class="space-y-4 mb-6">
-                            <div class="flex justify-between items-center">
-                                <span class="text-slate-500 font-bold">Price ({{ count($items) }} items)</span>
-                                <span class="text-slate-700 font-black">${{ number_format($subtotal, 2) }}</span>
+                        <!-- User Identity (Readonly) -->
+                        <div class="bg-white rounded-sm shadow-sm border border-slate-100">
+                            <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
+                                <span class="bg-[#2874f0] text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black">1</span>
+                                <h4 class="text-sm font-black uppercase tracking-widest m-0 text-slate-400">LOGIN PROTOCOL</h4>
                             </div>
-                            <div class="flex justify-between items-center text-slate-500">
-                                <span class="font-bold">Delivery Charges</span>
-                                <span class="font-black {{ $shipping_fee == 0 ? 'text-green-600' : 'text-slate-700' }}">
-                                    {{ $shipping_fee == 0 ? 'FREE' : '$' . number_format($shipping_fee, 2) }}
-                                </span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-slate-500 font-bold">Platform Fee</span>
-                                <span class="text-slate-700 font-black">${{ number_format($platform_fee, 2) }}</span>
+                            <div class="p-6">
+                                <div class="flex items-center gap-4">
+                                    <h5 class="text-sm font-bold text-slate-900 m-0">{{ $user->name }}</h5>
+                                    <span class="text-xs text-slate-400 font-medium">{{ $user->email }}</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="h-px bg-slate-100 w-full mb-6"></div>
-
-                        <div class="flex justify-between items-end mb-10">
-                            <div>
-                                <span class="text-slate-400 uppercase text-[10px] font-black tracking-widest">Amount Payable</span>
-                                <div class="text-3xl font-black text-slate-900">${{ number_format($grand_total, 2) }}</div>
+                        <!-- Delivery Address -->
+                        <div class="bg-white rounded-sm shadow-sm border border-slate-100">
+                            <div class="p-4 bg-[#2874f0] border-b border-slate-100 flex items-center gap-3">
+                                <span class="bg-white text-[#2874f0] w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black">2</span>
+                                <h4 class="text-sm font-black uppercase tracking-widest m-0 text-white">DELIVERY DESTINATION</h4>
+                            </div>
+                            <div class="p-8 space-y-6">
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Full Name</label>
+                                        <input type="text" name="name" value="{{ $user->name }}" required class="w-full bg-slate-50 border border-slate-200 py-3 px-4 text-sm font-bold focus:outline-none focus:border-[#2874f0] transition-colors rounded-sm">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Mobile Terminal</label>
+                                        <input type="text" name="phone" value="{{ $user->phone }}" required class="w-full bg-slate-50 border border-slate-200 py-3 px-4 text-sm font-bold focus:outline-none focus:border-[#2874f0] transition-colors rounded-sm" placeholder="10-digit mobile number">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Vector Address (Detailed)</label>
+                                        <textarea name="address" rows="3" required class="w-full bg-slate-50 border border-slate-200 py-3 px-4 text-sm font-bold focus:outline-none focus:border-[#2874f0] transition-colors rounded-sm" placeholder="House No, Building, Street, Area">{{ $user->address }}</textarea>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="bg-[#fb641b] text-white px-12 py-4 rounded-sm text-sm font-black uppercase tracking-[0.2em] shadow-xl shadow-orange-100 hover:bg-[#ff4500] transition-all w-full md:w-auto mt-4">
+                                    DELIVER TO THIS ADDRESS
+                                </button>
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full py-5 bg-primary text-white font-black rounded-2xl shadow-xl hover:shadow-primary/30 transition flex items-center justify-center gap-3 uppercase tracking-widest text-sm">
-                            Continue <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="mt-6 flex items-center gap-3 justify-center text-slate-400 text-xs font-bold uppercase">
-                        <i class="fas fa-shield-check text-green-500 text-lg"></i> 100% SECURE CHECKOUT
+                        <!-- Order Summary View -->
+                        <div class="bg-white rounded-sm shadow-sm border border-slate-100 hidden md:block">
+                            <div class="p-4 bg-slate-50 border-b border-slate-100">
+                                <h4 class="text-sm font-black uppercase tracking-widest m-0 text-slate-400">CARGO MANIFEST ({{ count($items) }} Items)</h4>
+                            </div>
+                            <div class="p-0 divide-y divide-slate-50">
+                                @foreach($items as $item)
+                                <div class="p-4 flex gap-4 items-center">
+                                    <div class="w-16 h-16 bg-slate-50 p-1 flex-shrink-0 border border-slate-100">
+                                        <img src="{{ $item->product->image_url }}" class="w-full h-full object-contain">
+                                    </div>
+                                    <div class="flex-grow">
+                                        <h5 class="text-xs font-bold text-slate-800 line-clamp-1 m-0">{{ $item->product->name }}</h5>
+                                        <p class="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">Qty: {{ $item->quantity }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-sm font-black text-slate-900">₹{{ number_format($item->price * $item->quantity) }}</span>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
+                <!-- Right Side: Price Details -->
+                <div class="col-lg-4">
+                    <div class="sticky top-20 bg-white rounded-sm shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50">
+                            <h4 class="text-sm font-black uppercase tracking-widest m-0 text-slate-400">FINANCIAL BREAKDOWN</h4>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-slate-500 font-medium">Acquisition Subtotal</span>
+                                <span class="text-slate-900 font-bold">₹{{ number_format($subtotal) }}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-slate-500 font-medium">Logistic Dispatch Fee</span>
+                                <span class="text-green-600 font-black uppercase italic">{{ $shipping_fee > 0 ? '₹'.number_format($shipping_fee) : 'FREE' }}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-slate-500 font-medium">Digital Processing Protocol</span>
+                                <span class="text-slate-900 font-bold">₹{{ number_format($platform_fee) }}</span>
+                            </div>
+                            
+                            <div class="border-t border-dashed border-slate-200 pt-4 mt-4 flex justify-between items-center">
+                                <span class="text-lg font-black text-slate-900 uppercase tracking-tighter">Net Total</span>
+                                <span class="text-2xl font-black text-slate-900">₹{{ number_format($grand_total) }}</span>
+                            </div>
+                        </div>
+                        <div class="bg-green-50 p-4 border-t border-green-100 text-center">
+                            <p class="text-green-700 text-[10px] font-black uppercase tracking-[0.2em] m-0">Protocol Optimized: Minimal Charges Applied</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </form>
+
     </div>
 </div>
 @endsection
