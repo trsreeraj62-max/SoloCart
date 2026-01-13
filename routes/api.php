@@ -1,49 +1,30 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use App\Models\Product;
-
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\ProductController;
-use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\BannerController;
-use App\Http\Controllers\Api\CartController;
-use App\Http\Controllers\Api\CheckoutController;
-use App\Http\Controllers\Api\OrderController;
-use App\Http\Controllers\Api\AdminAnalyticsController;
-use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\{
+    AuthController,
+    ProductController,
+    CategoryController,
+    BannerController,
+    CartController,
+    CheckoutController,
+    OrderController,
+    AdminAnalyticsController,
+    ContactController
+};
 
 /*
 |--------------------------------------------------------------------------
-| HEALTH CHECK
+| PUBLIC
 |--------------------------------------------------------------------------
 */
-Route::get('/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'db' => DB::connection() ? 'connected' : 'error'
-    ]);
-});
+Route::get('/health', fn () => response()->json(['status' => 'ok']));
 
-/*
-|--------------------------------------------------------------------------
-| HOME DATA (USED BY FRONTEND)
-|--------------------------------------------------------------------------
-*/
-Route::get('/home-data', function () {
-    return response()->json([
-        'status' => true,
-        'products' => Product::latest()->take(8)->get()
-    ]);
-});
+Route::get('/home-data', fn () => response()->json([
+    'success' => true,
+    'products' => \App\Models\Product::latest()->take(8)->get()
+]));
 
-/*
-|--------------------------------------------------------------------------
-| PUBLIC DATA
-|--------------------------------------------------------------------------
-*/
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
 Route::get('/products/{id}/similar', [ProductController::class, 'similar']);
@@ -64,7 +45,7 @@ Route::post('/otp/resend', [AuthController::class, 'resendOtp']);
 
 /*
 |--------------------------------------------------------------------------
-| PROTECTED ROUTES
+| AUTHENTICATED USER
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
@@ -86,19 +67,18 @@ Route::middleware('auth:sanctum')->group(function () {
     // Orders
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel']);
+    Route::post('/orders/{id}/return', [OrderController::class, 'returnOrder']);
+    Route::get('/orders/{id}/invoice', [OrderController::class, 'downloadInvoice']);
 });
 
 /*
 |--------------------------------------------------------------------------
-| DEBUG (TEMP – REMOVE LATER)
+| ADMIN (ADD admin middleware later)
 |--------------------------------------------------------------------------
 */
-Route::get('/db-test', function () {
-    return response()->json(['db' => 'connected']);
-});
-
-Route::get('/products-table-test', function () {
-    return response()->json([
-        'exists' => Schema::hasTable('products')
-    ]);
+Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
+    Route::get('/analytics', [AdminAnalyticsController::class, 'index']);
+    Route::get('/orders', [OrderController::class, 'adminIndex']);
+    Route::post('/orders/{id}/status', [OrderController::class, 'updateStatus']);
 });

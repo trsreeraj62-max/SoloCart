@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\ApiController;
 use App\Models\ContactMessage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ContactController extends ApiController
 {
@@ -13,18 +15,23 @@ class ContactController extends ApiController
     public function store(Request $request)
     {
         try {
-            $request->validate([
-                'name' => 'required',
-                'email' => 'required|email',
-                'subject' => 'required',
-                'message' => 'required'
+            $validated = $request->validate([
+                'name'    => 'required|string|max:255',
+                'email'   => 'required|email|max:255',
+                'subject' => 'required|string|max:255',
+                'message' => 'required|string',
             ]);
 
-            // For now, mirroring standard behavior which usually fires an email or saves to DB.
-            
-            return $this->success([], "Message received. We will get back to you soon!");
+            ContactMessage::create($validated);
+
+            return $this->success([], "Message received. We will contact you soon.");
         } catch (\Exception $e) {
-            return $this->error("Failed to process your message. Please try again later.", 500);
+            Log::error('Contact message error: ' . $e->getMessage());
+
+            return $this->error(
+                "Failed to process your message. Please try again later.",
+                500
+            );
         }
     }
 }

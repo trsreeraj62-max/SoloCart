@@ -61,29 +61,33 @@ class AuthController extends ApiController
         ], $message);
     }
 
-    public function login(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+  
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json([
-                'message' => 'Invalid credentials'
-            ], 401);
-        }
+public function login(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required'
+    ]);
 
-        $user = Auth::user();
+    $user = User::where('email', $request->email)->first();
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'status' => true,
-            'token' => $token,
-            'user' => $user
-        ]);
+    if (!$user || !Hash::check($request->password, $user->password)) {
+        return $this->error('Invalid credentials', 401);
     }
+
+    if (!$user->email_verified_at) {
+        return $this->error('Email not verified', 403);
+    }
+
+    $token = $user->createToken('auth_token')->plainTextToken;
+
+    return $this->success([
+        'token' => $token,
+        'token_type' => 'Bearer',
+        'user' => $user
+    ], 'Login successful');
+}
 
     public function verifyOtp(Request $request)
     {
