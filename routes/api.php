@@ -75,7 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/admin/discounts/category', [\App\Http\Controllers\Api\DiscountController::class, 'applyCategory']);
     });
 });
-use App\Models\Product;
+//use App\Models\Product;
 
 Route::get('/home-data', function () {
     return response()->json([
@@ -98,4 +98,10 @@ Route::get('/home-data', function () {
 
 Route::get('/products', function () {
     return Product::all();
+});
+Route::get('/home-data', function () {
+    return response()->json([
+        'status' => true,
+        'message' => 'Home API working'
+    ]);
 });
