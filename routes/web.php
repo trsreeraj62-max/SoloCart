@@ -95,3 +95,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/discounts/category', [AdminWebController::class, 'applyCategoryDiscount'])->name('discounts.category');
     });
 });
+Route::get('/', function () {
+    return response()->json([
+        'status' => true,
+        'message' => 'Solocart backend running'
+    ]);
+});
