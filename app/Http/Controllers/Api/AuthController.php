@@ -31,17 +31,34 @@ class AuthController extends ApiController
         // Send OTP
         $otp = rand(100000, 999999);
         Cache::put('otp_' . $user->id, $otp, 600); // 10 minutes
+        $mail_sent = false;
+        $mail_error = null;
+        $mailer_type = config('mail.default');
+
         try {
-            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
+            if ($mailer_type !== 'log') {
+                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
+                $mail_sent = true;
+            } else {
+                $mail_error = "Server is in 'LOG' mode. No real email sent.";
+            }
         } catch (\Exception $e) {
-            // Silently log mail error but continue registration in dev/local
-            \Illuminate\Support\Facades\Log::error('OTP Mail Error: ' . $e->getMessage());
+            $mail_error = $e->getMessage();
+            \Illuminate\Support\Facades\Log::error('OTP Mail Error: ' . $mail_error);
         }
         
+        $message = $mail_sent ? 'User registered. Please verify OTP sent to email.' : 'User registered but OTP mail failed.';
+        if (!$mail_sent) {
+            $message .= " Error: " . ($mail_error ?? 'Unknown error');
+        }
+
         return $this->success([
             'user_id' => $user->id,
-            'otp_debug' => config('app.env') !== 'production' ? $otp : null
-        ], 'User registered. Please verify OTP sent to email.');
+            'otp_sent' => $mail_sent,
+            'otp_debug' => (!$mail_sent || config('app.env') !== 'production' || $request->has('debug')) ? $otp : null,
+            'mail_driver' => $mailer_type,
+            'mail_error' => $mail_error
+        ], $message);
     }
 
     public function login(Request $request)
@@ -102,15 +119,28 @@ class AuthController extends ApiController
         $otp = rand(100000, 999999);
         Cache::put('otp_' . $user->id, $otp, 600);
         
+        $mail_sent = false;
+        $mail_error = null;
+        $mailer_type = config('mail.default');
+
         try {
-            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
+            if ($mailer_type !== 'log') {
+                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
+                $mail_sent = true;
+            } else {
+                $mail_error = "Server is in 'LOG' mode. No real email sent.";
+            }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Resend OTP Mail Error: ' . $e->getMessage());
+            $mail_error = $e->getMessage();
+            \Illuminate\Support\Facades\Log::error('Resend OTP Mail Error: ' . $mail_error);
         }
 
         return $this->success([
-            'otp_debug' => config('app.env') !== 'production' ? $otp : null
-        ], 'New OTP sent to email.');
+            'otp_sent' => $mail_sent,
+            'otp_debug' => (!$mail_sent || config('app.env') !== 'production' || $request->has('debug')) ? $otp : null,
+            'mail_driver' => $mailer_type,
+            'mail_error' => $mail_error
+        ], $mail_sent ? 'New OTP sent to email.' : 'Failed to send OTP email: ' . ($mail_error ?? 'Unknown error'));
     }
 
     public function logout(Request $request)

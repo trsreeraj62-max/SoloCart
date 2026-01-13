@@ -11,6 +11,11 @@ class HomeController extends Controller
 {
     public function index()
     {
+        // Redirect Admin to Dashboard
+        if (auth()->check() && auth()->user()->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
         try {
             $banners = Banner::all();
             $categories = Category::has('products')->get();

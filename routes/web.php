@@ -59,7 +59,6 @@ Route::post('/logout', [App\Http\Controllers\AuthWebController::class, 'logout']
 // Admin Panel
 Route::prefix('admin')->name('admin.')->group(function () {
     // We will add middleware 'can:admin' later or handling it in controller
-    Route::get('/login', function () { return view('admin.auth.login'); })->name('login');
     
     Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [AdminWebController::class, 'dashboard'])->name('dashboard');
@@ -94,10 +93,4 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/discounts/global', [AdminWebController::class, 'applyGlobalDiscount'])->name('discounts.global');
         Route::post('/discounts/category', [AdminWebController::class, 'applyCategoryDiscount'])->name('discounts.category');
     });
-});
-Route::get('/', function () {
-    return response()->json([
-        'status' => true,
-        'message' => 'Solocart backend running'
-    ]);
 });

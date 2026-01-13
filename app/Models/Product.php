@@ -22,6 +22,8 @@ class Product extends Model
         'specifications'
     ];
 
+    protected $appends = ['image_url'];
+
     /**
      * Scope for active products (could be status based, but here we just check stock)
      */

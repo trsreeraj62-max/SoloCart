@@ -54,6 +54,12 @@
                                 <i class="fas fa-user-circle text-[#2874f0] text-sm"></i>
                                 <span class="text-[10px] font-black uppercase tracking-widest">My Profile</span>
                             </a>
+                            @if(auth()->user()->role === 'admin')
+                            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 text-slate-700 no-underline hover:bg-slate-50 transition-colors">
+                                <i class="fas fa-user-shield text-[#2874f0] text-sm"></i>
+                                <span class="text-[10px] font-black uppercase tracking-widest">Admin Dashboard</span>
+                            </a>
+                            @endif
                             <a href="{{ route('orders.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-slate-700 no-underline hover:bg-slate-50 transition-colors">
                                 <i class="fas fa-box text-[#2874f0] text-sm"></i>
                                 <span class="text-[10px] font-black uppercase tracking-widest">My Orders</span>
