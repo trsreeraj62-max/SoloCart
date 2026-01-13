@@ -121,3 +121,10 @@ Route::get('/home-data', function () {
         'message' => 'Home API working'
     ]);
 });
+use Illuminate\Support\Facades\Schema;
+
+Route::get('/products-table-test', function () {
+    return response()->json([
+        'exists' => Schema::hasTable('products')
+    ]);
+});
