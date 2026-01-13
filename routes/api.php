@@ -19,6 +19,15 @@ Route::post('/otp/verify', [AuthController::class, 'verifyOtp']);
 Route::post('/otp/resend', [AuthController::class, 'resendOtp']);
 
 // Public Data
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toIso8601String(),
+        'environment' => app()->environment(),
+        'database' => \Illuminate\Support\Facades\DB::connection()->getDatabaseName() ? 'connected' : 'error'
+    ]);
+});
+
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
 Route::get('/products/{id}/similar', [ProductController::class, 'similar']);
