@@ -61,9 +61,14 @@
                         <div class="flex items-center justify-end gap-3">
                             {{-- View Icon --}}
                             <button type="button" 
-                                    class="text-blue-400 hover:text-blue-600 transition bg-transparent border-0 p-0" 
+                                    class="text-blue-400 hover:text-blue-600 transition bg-transparent border-0 p-0 user-manifest-btn" 
                                     title="View Signal Manifest"
-                                    onclick="showUserManifest('{{ $user->name }}', '{{ $user->email }}', '{{ $user->phone ?? 'N/A' }}', '{{ $user->address ?? 'N/A' }}', '{{ $user->status }}', '{{ $user->last_login_at ? $user->last_login_at->format('d M Y, h:i A') : 'NEVER' }}')">
+                                    data-name="{{ $user->name }}"
+                                    data-email="{{ $user->email }}"
+                                    data-phone="{{ $user->phone ?? 'N/A' }}"
+                                    data-address="{{ $user->address ?? 'N/A' }}"
+                                    data-status="{{ $user->status }}"
+                                    data-lastlogin="{{ $user->last_login_at ? $user->last_login_at->format('d M Y, h:i A') : 'NEVER' }}">
                                 <i class="fas fa-eye"></i>
                             </button>
 
@@ -140,17 +145,32 @@
 </div>
 
 <script>
-function showUserManifest(name, email, phone, address, status, lastLogin) {
-    document.getElementById('modalName').innerText = name;
-    document.getElementById('modalEmail').innerText = email;
-    document.getElementById('modalPhone').innerText = phone;
-    document.getElementById('modalAddress').innerText = address;
-    document.getElementById('modalLastLogin').innerText = lastLogin;
-    document.getElementById('modalInitials').innerText = name.charAt(0);
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.user-manifest-btn')) {
+        const btn = e.target.closest('.user-manifest-btn');
+        const data = {
+            name: btn.dataset.name,
+            email: btn.dataset.email,
+            phone: btn.dataset.phone,
+            address: btn.dataset.address,
+            status: btn.dataset.status,
+            lastLogin: btn.dataset.lastlogin
+        };
+        showUserManifest(data);
+    }
+});
+
+function showUserManifest(data) {
+    document.getElementById('modalName').innerText = data.name;
+    document.getElementById('modalEmail').innerText = data.email;
+    document.getElementById('modalPhone').innerText = data.phone;
+    document.getElementById('modalAddress').innerText = data.address;
+    document.getElementById('modalLastLogin').innerText = data.lastLogin;
+    document.getElementById('modalInitials').innerText = data.name.charAt(0);
     
     const badge = document.getElementById('modalStatusBadge');
-    badge.innerText = status;
-    badge.className = status === 'suspended' 
+    badge.innerText = data.status;
+    badge.className = data.status === 'suspended' 
         ? 'text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-rose-100 text-rose-600'
         : 'text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-green-100 text-green-600';
     
