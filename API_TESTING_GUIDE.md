@@ -5,7 +5,7 @@ Use this guide to test the core API protocols. Use **Postman**, **Insomnia**, or
 ## 🔐 1. Authentication Protocol
 
 ### [POST] Register Account
-- **URL**: `{{APP_URL}}/api/register`
+- **URL**: `https://solocart-backend.onrender.com/api/register`
 - **Payload**:
 ```json
 {
@@ -18,7 +18,7 @@ Use this guide to test the core API protocols. Use **Postman**, **Insomnia**, or
 - **Expect**: `200 OK` + `otp_debug` (if in dev mode).
 
 ### [POST] Verify OTP Signal
-- **URL**: `{{APP_URL}}/api/otp/verify`
+- **URL**: `https://solocart-backend.onrender.com/api/otp/verify`
 - **Payload**:
 ```json
 {
@@ -33,12 +33,12 @@ Use this guide to test the core API protocols. Use **Postman**, **Insomnia**, or
 ## 🛒 2. Acquisition (Cart) Manifest
 
 ### [GET] Retrieve Manifest
-- **URL**: `{{APP_URL}}/api/cart`
+- **URL**: `https://solocart-backend.onrender.com/api/cart`
 - **Headers**: `Authorization: Bearer {{YOUR_TOKEN}}`
 - **Expect**: Current items in digital container.
 
 ### [POST] Synchronize Item (Add)
-- **URL**: `{{APP_URL}}/api/cart/add`
+- **URL**: `https://solocart-backend.onrender.com/api/cart/add`
 - **Payload**:
 ```json
 {
@@ -52,7 +52,7 @@ Use this guide to test the core API protocols. Use **Postman**, **Insomnia**, or
 ## 📦 3. Deployment (Orders)
 
 ### [POST] Standard Deployment (Cart Checkout)
-- **URL**: `{{APP_URL}}/api/checkout/cart`
+- **URL**: `https://solocart-backend.onrender.com/api/checkout/cart`
 - **Payload**:
 ```json
 {
@@ -62,7 +62,7 @@ Use this guide to test the core API protocols. Use **Postman**, **Insomnia**, or
 ```
 
 ### [GET] Audit Trail (Order List)
-- **URL**: `{{APP_URL}}/api/orders`
+- **URL**: `https://solocart-backend.onrender.com/api/orders`
 - **Expect**: Historically placed orders with status codes.
 
 ---
