@@ -21,13 +21,17 @@ use App\Http\Controllers\Api\{
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
 
 Route::get('/home-data', function() {
+    $products = \App\Models\Product::with(['category', 'images'])->active()->get();
+    
     return response()->json([
         'success' => true,
         'message' => 'Home data retrieved',
         'data' => [
             'banners' => \App\Models\Banner::all(),
             'categories' => \App\Models\Category::all(),
-            'products' => \App\Models\Product::with(['category', 'images'])->latest()->take(10)->get()
+            'products' => $products->take(20), // General pool
+            'featured_products' => $products->shuffle()->take(8),
+            'latest_products' => $products->sortByDesc('created_at')->take(8),
         ]
     ]);
 });
