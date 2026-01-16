@@ -64,31 +64,50 @@ class AuthController extends ApiController
   
 
 public function login(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required'
-    ]);
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
 
-    $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
 
-    if (!$user || !Hash::check($request->password, $user->password)) {
-        return $this->error('Invalid credentials', 401);
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return $this->error('Invalid credentials', 401);
+        }
+
+        // Admin Bypass: Login immediately regardless of verification
+        if ($user->role === 'admin') {
+            $user->update(['last_login_at' => now()]);
+            $token = $user->createToken('admin_token')->plainTextToken;
+            return $this->success([
+                'token' => $token,
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'role' => 'admin',
+                'user' => $user
+            ], 'Admin Login Successful');
+        }
+
+        if (!$user->email_verified_at) {
+            return $this->error('Email not verified', 403);
+        }
+
+        // Check 2 months logic for API? 
+        // For now, standard functionality implies just logging in if verified.
+        // We update last_login_at.
+        $user->update(['last_login_at' => now()]);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return $this->success([
+            'token' => $token,
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'role' => 'user',
+            'user' => $user
+        ], 'Login successful');
     }
-
-    if (!$user->email_verified_at) {
-        return $this->error('Email not verified', 403);
-    }
-
-    $token = $user->createToken('auth_token')->plainTextToken;
-
-    return $this->success([
-        'token' => $token,
-        'access_token' => $token,
-        'token_type' => 'Bearer',
-        'user' => $user
-    ], 'Login successful');
-}
 
     public function verifyOtp(Request $request)
     {
