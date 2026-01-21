@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\{
     CheckoutController,
     OrderController,
     AdminAnalyticsController,
+    AdminUserController,
     ContactController
 };
 
@@ -87,11 +88,33 @@ Route::middleware('auth:sanctum')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN (ADD admin middleware later)
+| ADMIN (Protected by auth:sanctum + admin middleware)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    
+    // Analytics
     Route::get('/analytics', [AdminAnalyticsController::class, 'index']);
+    
+    // Orders Management
     Route::get('/orders', [OrderController::class, 'adminIndex']);
     Route::post('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+    
+    // Users Management
+    Route::get('/users', [AdminUserController::class, 'index']);
+    Route::get('/users/{id}', [AdminUserController::class, 'show']);
+    Route::post('/users/{id}/toggle-status', [AdminUserController::class, 'toggleStatus']);
+    Route::post('/users/{id}/role', [AdminUserController::class, 'updateRole']);
+    Route::delete('/users/{id}', [AdminUserController::class, 'destroy']);
+    
+    // Products Management
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::put('/products/{id}', [ProductController::class, 'update']);
+    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+    
+    // Banners Management
+    Route::get('/banners', [BannerController::class, 'adminIndex']);
+    Route::post('/banners', [BannerController::class, 'store']);
+    Route::put('/banners/{id}', [BannerController::class, 'update']);
+    Route::delete('/banners/{id}', [BannerController::class, 'destroy']);
 });

@@ -24,4 +24,97 @@ class BannerController extends ApiController
             return $this->error("Failed to retrieve banners", 500);
         }
     }
+
+    /**
+     * Admin: Get all banners (including inactive)
+     */
+    public function adminIndex()
+    {
+        try {
+            $banners = Banner::latest()->get();
+            return $this->success($banners, "All banners retrieved");
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Admin Banners Error: ' . $e->getMessage());
+            return $this->error("Failed to retrieve banners", 500);
+        }
+    }
+
+    /**
+     * Admin: Create banner
+     */
+    public function store(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'subtitle' => 'nullable|string|max:255',
+                'image' => 'required|string',
+                'link' => 'nullable|url',
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date',
+            ]);
+
+            $banner = Banner::create($validated);
+
+            return $this->success($banner, "Banner created successfully", 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->error("Validation failed", 422, $e->errors());
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Create Banner Error: ' . $e->getMessage());
+            return $this->error("Failed to create banner", 500);
+        }
+    }
+
+    /**
+     * Admin: Update banner
+     */
+    public function update(Request $request, $id)
+    {
+        try {
+            $banner = Banner::find($id);
+            
+            if (!$banner) {
+                return $this->error("Banner not found", 404);
+            }
+
+            $validated = $request->validate([
+                'title' => 'sometimes|required|string|max:255',
+                'subtitle' => 'nullable|string|max:255',
+                'image' => 'sometimes|required|string',
+                'link' => 'nullable|url',
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date',
+            ]);
+
+            $banner->update($validated);
+
+            return $this->success($banner, "Banner updated successfully");
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->error("Validation failed", 422, $e->errors());
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Update Banner Error: ' . $e->getMessage());
+            return $this->error("Failed to update banner", 500);
+        }
+    }
+
+    /**
+     * Admin: Delete banner
+     */
+    public function destroy($id)
+    {
+        try {
+            $banner = Banner::find($id);
+            
+            if (!$banner) {
+                return $this->error("Banner not found", 404);
+            }
+
+            $banner->delete();
+
+            return $this->success([], "Banner deleted successfully");
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Delete Banner Error: ' . $e->getMessage());
+            return $this->error("Failed to delete banner", 500);
+        }
+    }
 }

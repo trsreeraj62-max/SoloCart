@@ -90,11 +90,16 @@ class OrderController extends ApiController
      */
     public function adminIndex(Request $request)
     {
-        $query = Order::with(['user', 'items.product'])->latest();
-        if ($request->filled('status')) $query->where('status', $request->status);
-        
-        $orders = $query->paginate(20);
-        return $this->success($orders, "Admin orders retrieved");
+        try {
+            $query = Order::with(['user', 'items.product'])->latest();
+            if ($request->filled('status')) $query->where('status', $request->status);
+            
+            $orders = $query->paginate(20);
+            return $this->success($orders, "Admin orders retrieved");
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Admin Orders Error: ' . $e->getMessage());
+            return $this->error("Failed to retrieve orders", 500);
+        }
     }
 
     /**
@@ -102,17 +107,22 @@ class OrderController extends ApiController
      */
     public function updateStatus(Request $request, $id)
     {
-        $request->validate([
-            'status' => 'required|in:pending,approved,packed,shipped,out_for_delivery,delivered,cancelled,returned'
-        ]);
+        try {
+            $request->validate([
+                'status' => 'required|in:pending,approved,packed,shipped,out_for_delivery,delivered,cancelled,returned'
+            ]);
 
-        $order = Order::find($id);
-        if (!$order) {
-            return $this->error("Order not found", 404);
+            $order = Order::find($id);
+            if (!$order) {
+                return $this->error("Order not found", 404);
+            }
+
+            $this->orderService->updateStatus($order, $request->status);
+
+            return $this->success($order, "Order status updated to " . $request->status);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Update Order Status Error: ' . $e->getMessage());
+            return $this->error("Failed to update order status", 500);
         }
-
-        $this->orderService->updateStatus($order, $request->status);
-
-        return $this->success($order, "Order status updated to " . $request->status);
     }
 }

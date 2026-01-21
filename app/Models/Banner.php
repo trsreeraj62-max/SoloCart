@@ -9,7 +9,16 @@ class Banner extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['image_path', 'title', 'link', 'type', 'start_date', 'end_date'];
+    protected $fillable = [
+        'image_path', 
+        'image',      // Allow both image and image_path
+        'title', 
+        'subtitle',
+        'link', 
+        'type', 
+        'start_date', 
+        'end_date'
+    ];
 
     protected $appends = ['image_url'];
 
