@@ -75,29 +75,52 @@ const response = await fetch(`${API_BASE_URL}/api/cart`, {
 });
 ```
 
-### 3. Common API Endpoints
+### 3. All API Endpoints
 
-#### Authentication
-- `POST /api/register` - Register new user
-- `POST /api/otp/verify` - Verify OTP
-- `POST /api/logout` - Logout user
+#### 🌍 Public
+- `GET /api/health` - Check API status
+- `GET /api/home-data` - Get all home page data (banners, categories, featured/latest products)
+- `GET /api/products` - List all products (supports pagination & filters)
+- `GET /api/products/{id}` - Get product details
+- `GET /api/products/{id}/similar` - Get similar products
+- `GET /api/categories` - List all categories
+- `GET /api/banners` - List active banners
+- `POST /api/contact` - Submit contact form
 
-#### Products
-- `GET /api/products` - Get all products
-- `GET /api/products/{id}` - Get single product
-- `GET /api/categories` - Get all categories
+#### 🔐 Authentication
+- `POST /api/register` - Register a new user
+- `POST /api/login` - Login with email/password (requests OTP)
+- `POST /api/otp/verify` - Verify OTP to complete login
+- `POST /api/otp/resend` - Resend OTP
 
-#### Cart
-- `GET /api/cart` - Get user's cart
+#### 👤 User (Requires Authentication)
+- `GET /api/user` - Get current user profile
+- `POST /api/logout` - Logout (invalidate token)
+
+#### 🛒 Cart
+- `GET /api/cart` - Get current user's cart
 - `POST /api/cart/add` - Add item to cart
-- `PUT /api/cart/{id}` - Update cart item
-- `DELETE /api/cart/{id}` - Remove cart item
+- `POST /api/cart/update` - Update cart item quantity
+- `PUT /api/cart/{id}` - Update cart item quantity (alternate)
+- `POST /api/cart/remove` - Remove item from cart
+- `DELETE /api/cart/{id}` - Remove item from cart (alternate)
+- `POST /api/cart/clear` - Clear entire cart
 
-#### Orders
+#### 💳 Checkout
 - `POST /api/checkout/cart` - Checkout entire cart
-- `POST /api/checkout/single` - Checkout single product
-- `GET /api/orders` - Get user's orders
+- `POST /api/checkout/single` - Direct checkout for single product
+
+#### 📦 Orders
+- `GET /api/orders` - List user history
 - `GET /api/orders/{id}` - Get order details
+- `POST /api/orders/{id}/cancel` - Cancel order (if eligible)
+- `POST /api/orders/{id}/return` - Return order (if delivered)
+- `GET /api/orders/{id}/invoice` - Download order invoice
+
+#### 🛡️ Admin (Requires Admin Role)
+- `GET /api/admin/analytics` - Get dashboard analytics
+- `GET /api/admin/orders` - List all system orders
+- `POST /api/admin/orders/{id}/status` - Update order status (pending, shipped, delivered, cancelled)
 
 ---
 

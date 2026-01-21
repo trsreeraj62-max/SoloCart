@@ -69,6 +69,7 @@ Use this guide to test the core API protocols. Use **Postman**, **Insomnia**, or
 
 ## 🔍 4. Global Signal Nodes (Public)
 
+- **[GET] Home Data**: `/api/home-data` (Banners, Categories, Featured/Latest Products)
 - **[GET] Products**: `/api/products?search=phone&min_price=10000`
 - **[GET] Categories**: `/api/categories`
 - **[GET] Banners**: `/api/banners`

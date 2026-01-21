@@ -45,14 +45,13 @@ SESSION_DOMAIN=.onrender.com
 
 ### 3. **API Testing Guide**
 
-#### `API_TESTING_GUIDE.md`
-All API endpoints now use the full backend URL instead of placeholders:
+#### `API_TESTING_GUIDE.md` & `FRONTEND_INTEGRATION.md`
+All API endpoints now use the full backend URL. See `FRONTEND_INTEGRATION.md` for the complete and comprehensive list of all available Public, Auth, User, Cart, Order, and Admin endpoints.
 
-- ✅ `https://solocart-backend.onrender.com/api/register`
-- ✅ `https://solocart-backend.onrender.com/api/otp/verify`
+Key base endpoints:
+- ✅ `https://solocart-backend.onrender.com/api/home-data`
+- ✅ `https://solocart-backend.onrender.com/api/products`
 - ✅ `https://solocart-backend.onrender.com/api/cart`
-- ✅ `https://solocart-backend.onrender.com/api/cart/add`
-- ✅ `https://solocart-backend.onrender.com/api/checkout/cart`
 - ✅ `https://solocart-backend.onrender.com/api/orders`
 
 ---
