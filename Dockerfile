@@ -44,4 +44,5 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.
 EXPOSE 80
 
 # Run migrations and start apache in entrypoint if needed, or just start apache
-CMD ["apache2-foreground"]
+# Run migrations and seeders, then start Apache
+CMD ["sh", "-c", "php artisan migrate --force && php artisan db:seed --class=BannerSeeder --force && apache2-foreground"]

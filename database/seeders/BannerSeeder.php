@@ -52,7 +52,10 @@ class BannerSeeder extends Seeder
         ];
 
         foreach ($banners as $banner) {
-            Banner::create($banner);
+            Banner::firstOrCreate(
+                ['title' => $banner['title']], // Check if banner with this title exists
+                $banner // If not, create it with these attributes
+            );
         }
     }
 }
