@@ -21,14 +21,14 @@ After pushing the code changes, you MUST update the environment variables on Ren
 #### Required New Variables:
 
 ```env
-FRONTEND_URL=https://polite-bombolone-b0c069.netlify.app
+FRONTEND_URL=https://solocart-frontend.onrender.com
 ```
 
 #### Update Existing Variables:
 
 ```env
-SANCTUM_STATEFUL_DOMAINS=polite-bombolone-b0c069.netlify.app
-SESSION_DOMAIN=.netlify.app
+SANCTUM_STATEFUL_DOMAINS=solocart-frontend.onrender.com
+SESSION_DOMAIN=.onrender.com
 ```
 
 #### Verify These Exist:
@@ -82,11 +82,11 @@ MAIL_FROM_ADDRESS=no-reply@solocart.com
 MAIL_FROM_NAME=SoloCart
 
 # Frontend Integration (CRITICAL - ADD THESE)
-FRONTEND_URL=https://polite-bombolone-b0c069.netlify.app
+FRONTEND_URL=https://solocart-frontend.onrender.com
 
 # Sanctum Config (CRITICAL - UPDATE THESE)
-SANCTUM_STATEFUL_DOMAINS=polite-bombolone-b0c069.netlify.app
-SESSION_DOMAIN=.netlify.app
+SANCTUM_STATEFUL_DOMAINS=solocart-frontend.onrender.com
+SESSION_DOMAIN=.onrender.com
 ```
 
 ---
@@ -134,7 +134,7 @@ Expected response:
 ```
 
 ### 2. Test CORS from Frontend
-Open browser console on `https://polite-bombolone-b0c069.netlify.app` and run:
+Open browser console on `https://solocart-frontend.onrender.com` and run:
 
 ```javascript
 fetch('https://solocart-backend.onrender.com/api/products')
@@ -148,7 +148,7 @@ fetch('https://solocart-backend.onrender.com/api/products')
 ### 3. Check Response Headers
 In Network tab, verify the response includes:
 ```
-Access-Control-Allow-Origin: https://polite-bombolone-b0c069.netlify.app
+Access-Control-Allow-Origin: https://solocart-frontend.onrender.com
 ```
 
 ---
@@ -181,7 +181,7 @@ Access-Control-Allow-Origin: https://polite-bombolone-b0c069.netlify.app
 
 - [ ] Added `FRONTEND_URL` environment variable on Render
 - [ ] Updated `SANCTUM_STATEFUL_DOMAINS` to frontend domain
-- [ ] Added `SESSION_DOMAIN=.netlify.app`
+- [ ] Added `SESSION_DOMAIN=.onrender.com`
 - [ ] Saved changes on Render
 - [ ] Deployment completed successfully
 - [ ] Tested API health endpoint
@@ -192,4 +192,4 @@ Access-Control-Allow-Origin: https://polite-bombolone-b0c069.netlify.app
 
 **Status**: Code changes pushed to GitHub ✅  
 **Next**: Update Render environment variables ⏳  
-**Last Updated**: 2026-01-13
+**Last Updated**: 2026-01-21

@@ -1,11 +1,11 @@
 # 🔗 Frontend-Backend Integration Guide
 
 ## Overview
-This guide explains how to connect the SoloCart frontend (Netlify) with the backend API (Render).
+This guide explains how to connect the SoloCart frontend (Render) with the backend API (Render).
 
 ## URLs
 - **Backend API**: `https://solocart-backend.onrender.com`
-- **Frontend**: `https://polite-bombolone-b0c069.netlify.app`
+- **Frontend**: `https://solocart-frontend.onrender.com`
 
 ---
 
@@ -17,9 +17,9 @@ The following environment variables must be set on Render:
 
 ```env
 APP_URL=https://solocart-backend.onrender.com
-FRONTEND_URL=https://polite-bombolone-b0c069.netlify.app
-SANCTUM_STATEFUL_DOMAINS=polite-bombolone-b0c069.netlify.app
-SESSION_DOMAIN=.netlify.app
+FRONTEND_URL=https://solocart-frontend.onrender.com
+SANCTUM_STATEFUL_DOMAINS=solocart-frontend.onrender.com
+SESSION_DOMAIN=.onrender.com
 ```
 
 ### 2. CORS Configuration
@@ -27,7 +27,7 @@ SESSION_DOMAIN=.netlify.app
 File: `config/cors.php`
 
 ```php
-'allowed_origins' => ['https://polite-bombolone-b0c069.netlify.app'],
+'allowed_origins' => ['https://solocart-frontend.onrender.com'],
 'allowed_methods' => ['*'],
 'allowed_headers' => ['*'],
 'supports_credentials' => false,
@@ -129,7 +129,7 @@ fetch('https://solocart-backend.onrender.com/api/health')
 - Open DevTools → Network tab
 - Make a request from frontend
 - Check response headers for:
-  - `Access-Control-Allow-Origin: https://polite-bombolone-b0c069.netlify.app`
+  - `Access-Control-Allow-Origin: https://solocart-frontend.onrender.com`
   - Status code: 200 (not 403 or 500)
 
 ---
@@ -171,7 +171,7 @@ fetch('https://solocart-backend.onrender.com/api/health')
 - [ ] Seeder run (if needed)
 - [ ] Verify API endpoints are accessible
 
-### Frontend (Netlify)
+### Frontend (Render)
 - [ ] API_BASE_URL configured correctly
 - [ ] All API calls use correct endpoints
 - [ ] Authentication flow implemented
@@ -184,21 +184,21 @@ fetch('https://solocart-backend.onrender.com/api/health')
 
 1. **Update Render Environment Variables**:
    - Go to Render Dashboard → Your Service → Environment
-   - Add `FRONTEND_URL=https://polite-bombolone-b0c069.netlify.app`
-   - Add `SANCTUM_STATEFUL_DOMAINS=polite-bombolone-b0c069.netlify.app`
-   - Add `SESSION_DOMAIN=.netlify.app`
+   - Add `FRONTEND_URL=https://solocart-frontend.onrender.com`
+   - Add `SANCTUM_STATEFUL_DOMAINS=solocart-frontend.onrender.com`
+   - Add `SESSION_DOMAIN=.onrender.com`
 
 2. **Push Backend Changes**:
    ```bash
    git add .
-   git commit -m "Configure CORS and Sanctum for Netlify frontend"
+   git commit -m "Configure CORS and Sanctum for Render frontend"
    git push origin main
    ```
 
 3. **Update Frontend**:
    - Configure API_BASE_URL in your frontend code
    - Test all API integrations
-   - Deploy to Netlify
+   - Deploy to Render
 
 4. **Test Integration**:
    - Visit frontend URL
@@ -209,5 +209,5 @@ fetch('https://solocart-backend.onrender.com/api/health')
 
 ---
 
-**Last Updated**: 2026-01-13  
+**Last Updated**: 2026-01-21  
 **Status**: Backend configured, ready for frontend integration

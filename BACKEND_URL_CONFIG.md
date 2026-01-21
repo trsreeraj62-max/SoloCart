@@ -2,7 +2,7 @@
 
 ## URLs
 **Backend (API)**: `https://solocart-backend.onrender.com`  
-**Frontend**: `https://polite-bombolone-b0c069.netlify.app`
+**Frontend**: `https://solocart-frontend.onrender.com`
 
 ---
 
@@ -13,17 +13,17 @@
 #### `.env.example`
 ```env
 APP_URL=https://solocart-backend.onrender.com
-FRONTEND_URL=https://polite-bombolone-b0c069.netlify.app
-SANCTUM_STATEFUL_DOMAINS=polite-bombolone-b0c069.netlify.app
-SESSION_DOMAIN=.netlify.app
+FRONTEND_URL=https://solocart-frontend.onrender.com
+SANCTUM_STATEFUL_DOMAINS=solocart-frontend.onrender.com
+SESSION_DOMAIN=.onrender.com
 ```
 
 #### `.env.render`
 ```env
 APP_URL=https://solocart-backend.onrender.com
-FRONTEND_URL=https://polite-bombolone-b0c069.netlify.app
-SANCTUM_STATEFUL_DOMAINS=polite-bombolone-b0c069.netlify.app
-SESSION_DOMAIN=.netlify.app
+FRONTEND_URL=https://solocart-frontend.onrender.com
+SANCTUM_STATEFUL_DOMAINS=solocart-frontend.onrender.com
+SESSION_DOMAIN=.onrender.com
 ```
 
 > **Note**: The `.env` file (gitignored) should have the same configuration.
@@ -34,7 +34,9 @@ SESSION_DOMAIN=.netlify.app
 
 #### `config/cors.php`
 ```php
-'allowed_origins' => ['https://polite-bombolone-b0c069.netlify.app'],
+'allowed_origins' => [
+    'https://solocart-frontend.onrender.com'
+],
 ```
 
 ✅ **Fixed**: Removed syntax error and configured to allow only the frontend domain
@@ -86,7 +88,7 @@ These files automatically use the environment variables:
 
 ### `config/cors.php`
 ```php
-'allowed_origins' => ['https://polite-bombolone-b0c069.netlify.app'],
+'allowed_origins' => ['https://solocart-frontend.onrender.com'],
 ```
 
 ---
@@ -115,7 +117,7 @@ These files automatically use the environment variables:
 ## 🔗 Quick Links
 
 - **Backend API**: https://solocart-backend.onrender.com
-- **Frontend**: https://polite-bombolone-b0c069.netlify.app
+- **Frontend**: https://solocart-frontend.onrender.com
 - **API Docs**: See `API_TESTING_GUIDE.md`
 - **Admin Panel**: https://solocart-backend.onrender.com/admin/dashboard
 

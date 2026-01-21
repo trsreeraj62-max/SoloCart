@@ -7,7 +7,7 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        'https://polite-bombolone-b0c069.netlify.app',
+        'https://solocart-frontend.onrender.com',
     ],
 
     'allowed_headers' => ['*'],
