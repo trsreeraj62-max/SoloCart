@@ -29,7 +29,7 @@ class AdminUserController extends ApiController
                 });
             }
             
-            $users = $query->latest()->paginate(20);
+            $users = $query->latest()->get();
             
             return $this->success($users, "Users retrieved successfully");
         } catch (\Exception $e) {
