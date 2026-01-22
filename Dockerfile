@@ -45,4 +45,4 @@ EXPOSE 80
 
 # Run migrations and start apache in entrypoint if needed, or just start apache
 # Run migrations and seeders, then start Apache
-CMD ["sh", "-c", "php artisan migrate --force && php artisan db:seed --class=BannerSeeder --force && apache2-foreground"]
+CMD ["sh", "-c", "php artisan storage:link && php artisan migrate --force && php artisan db:seed --class=BannerSeeder --force && apache2-foreground"]
