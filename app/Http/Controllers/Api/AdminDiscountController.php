@@ -40,7 +40,7 @@ class AdminDiscountController extends ApiController
             return $this->success([], "Discount of {$request->discount_percent}% applied to category");
         } catch (\Exception $e) {
             Log::error('Apply Category Discount Error: ' . $e->getMessage());
-            return $this->error("Failed to apply category discount", 500);
+            return $this->error("Failed to apply category discount: " . $e->getMessage(), 500);
         }
     }
 
@@ -63,7 +63,7 @@ class AdminDiscountController extends ApiController
             return $this->success([], "Global discount of {$request->discount_percent}% applied to all products");
         } catch (\Exception $e) {
             Log::error('Apply Global Discount Error: ' . $e->getMessage());
-            return $this->error("Failed to apply global discount", 500);
+            return $this->error("Failed to apply global discount: " . $e->getMessage(), 500);
         }
     }
 
