@@ -11,7 +11,9 @@ use App\Http\Controllers\Api\{
     OrderController,
     AdminAnalyticsController,
     AdminUserController,
-    ContactController
+    ContactController,
+    AdminDashboardController,
+    AdminProductController
 };
 
 /*
@@ -93,6 +95,9 @@ Route::middleware('auth:sanctum')->group(function () {
 */
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     
+    // Dashboard Stats
+    Route::get('/dashboard-stats', [AdminDashboardController::class, 'stats']);
+
     // Analytics
     Route::get('/analytics', [AdminAnalyticsController::class, 'index']);
     
@@ -108,9 +113,10 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::delete('/users/{id}', [AdminUserController::class, 'destroy']);
     
     // Products Management
-    Route::post('/products', [ProductController::class, 'store']);
-    Route::put('/products/{id}', [ProductController::class, 'update']);
-    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+    Route::get('/products', [AdminProductController::class, 'index']);
+    Route::post('/products', [AdminProductController::class, 'store']);
+    Route::put('/products/{id}', [AdminProductController::class, 'update']);
+    Route::delete('/products/{id}', [AdminProductController::class, 'destroy']);
     
     // Banners Management
     Route::get('/banners', [BannerController::class, 'adminIndex']);
