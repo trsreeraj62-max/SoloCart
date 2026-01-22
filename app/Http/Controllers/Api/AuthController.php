@@ -158,8 +158,17 @@ public function login(Request $request)
     
     public function resendOtp(Request $request)
     {
-        $request->validate(['user_id' => 'required|exists:users,id']);
-        $user = User::find($request->user_id);
+        // Allow looking up by user_id OR email
+        $request->validate([
+            'user_id' => 'required_without:email|exists:users,id',
+            'email' => 'required_without:user_id|exists:users,email'
+        ]);
+
+        if ($request->filled('user_id')) {
+            $user = User::find($request->user_id);
+        } else {
+            $user = User::where('email', strtolower($request->email))->first();
+        }
 
         $otp = rand(100000, 999999);
         Cache::put('otp_' . $user->id, $otp, 600);
