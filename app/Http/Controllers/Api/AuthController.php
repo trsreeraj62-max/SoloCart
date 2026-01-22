@@ -76,50 +76,57 @@ class AuthController extends ApiController
 
 public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required'
+            ]);
 
-        // Normalize email to lowercase
-        $email = strtolower($request->email);
-        $user = User::where('email', $email)->first();
+            // Normalize email to lowercase
+            $email = strtolower($request->email);
+            $user = User::where('email', $email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return $this->error('Invalid credentials', 401);
-        }
+            if (!$user || !Hash::check($request->password, $user->password)) {
+                return $this->error('Invalid credentials', 401);
+            }
 
-        // Admin Bypass: Login immediately regardless of verification
-        if ($user->role === 'admin') {
+            // Admin Bypass: Login immediately regardless of verification
+            if ($user->role === 'admin') {
+                $user->update(['last_login_at' => now()]);
+                $token = $user->createToken('admin_token')->plainTextToken;
+                return $this->success([
+                    'token' => $token,
+                    'access_token' => $token,
+                    'token_type' => 'Bearer',
+                    'role' => 'admin',
+                    'user' => $user
+                ], 'Admin Login Successful');
+            }
+
+            if (!$user->email_verified_at) {
+                return $this->error('Email not verified', 403);
+            }
+
+            // Check 2 months logic for API? 
+            // For now, standard functionality implies just logging in if verified.
+            // We update last_login_at.
             $user->update(['last_login_at' => now()]);
-            $token = $user->createToken('admin_token')->plainTextToken;
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
             return $this->success([
                 'token' => $token,
                 'access_token' => $token,
                 'token_type' => 'Bearer',
-                'role' => 'admin',
+                'role' => 'user',
                 'user' => $user
-            ], 'Admin Login Successful');
+            ], 'Login successful');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->error("Validation failed", 422, $e->errors());
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Login Error: ' . $e->getMessage());
+            return $this->error("Login failed: " . $e->getMessage(), 500);
         }
-
-        if (!$user->email_verified_at) {
-            return $this->error('Email not verified', 403);
-        }
-
-        // Check 2 months logic for API? 
-        // For now, standard functionality implies just logging in if verified.
-        // We update last_login_at.
-        $user->update(['last_login_at' => now()]);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return $this->success([
-            'token' => $token,
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'role' => 'user',
-            'user' => $user
-        ], 'Login successful');
     }
 
     public function verifyOtp(Request $request)
