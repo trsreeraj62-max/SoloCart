@@ -62,6 +62,8 @@ class AuthController extends ApiController
             'mail_driver' => $mailer_type,
             'mail_error' => $mail_error
         ], $message);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return $this->error("Validation failed", 422, $e->errors());
     }
 
   
