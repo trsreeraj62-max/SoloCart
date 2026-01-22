@@ -13,57 +13,63 @@ class AuthController extends ApiController
 {
     public function register(Request $request)
     {
-        // Normalize email to lowercase
-        $request->merge(['email' => strtolower($request->email)]);
-
-        $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
-            'phone' => 'required',
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'phone' => $request->phone,
-            'role' => 'user',
-        ]);
-
-        // Send OTP
-        $otp = rand(100000, 999999);
-        Cache::put('otp_' . $user->id, $otp, 600); // 10 minutes
-        $mail_sent = false;
-        $mail_error = null;
-        $mailer_type = config('mail.default');
-
         try {
-            if ($mailer_type !== 'log') {
-                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
-                $mail_sent = true;
-            } else {
-                $mail_error = "Server is in 'LOG' mode. No real email sent.";
-            }
-        } catch (\Exception $e) {
-            $mail_error = $e->getMessage();
-            \Illuminate\Support\Facades\Log::error('OTP Mail Error: ' . $mail_error);
-        }
-        
-        $message = $mail_sent ? 'User registered. Please verify OTP sent to email.' : 'User registered but OTP mail failed.';
-        if (!$mail_sent) {
-            $message .= " Error: " . ($mail_error ?? 'Unknown error');
-        }
+            // Normalize email to lowercase
+            $request->merge(['email' => strtolower($request->email)]);
 
-        return $this->success([
-            'user_id' => $user->id,
-            'otp_sent' => $mail_sent,
-            'otp_debug' => (!$mail_sent || config('app.env') !== 'production' || $request->has('debug')) ? $otp : null,
-            'mail_driver' => $mailer_type,
-            'mail_error' => $mail_error
-        ], $message);
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return $this->error("Validation failed", 422, $e->errors());
+            $request->validate([
+                'name' => 'required|string',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|min:6',
+                'phone' => 'required',
+            ]);
+
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'phone' => $request->phone,
+                'role' => 'user',
+            ]);
+
+            // Send OTP
+            $otp = rand(100000, 999999);
+            Cache::put('otp_' . $user->id, $otp, 600); // 10 minutes
+            $mail_sent = false;
+            $mail_error = null;
+            $mailer_type = config('mail.default');
+
+            try {
+                if ($mailer_type !== 'log') {
+                    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
+                    $mail_sent = true;
+                } else {
+                    $mail_error = "Server is in 'LOG' mode. No real email sent.";
+                }
+            } catch (\Exception $e) {
+                $mail_error = $e->getMessage();
+                \Illuminate\Support\Facades\Log::error('OTP Mail Error: ' . $mail_error);
+            }
+            
+            $message = $mail_sent ? 'User registered. Please verify OTP sent to email.' : 'User registered but OTP mail failed.';
+            if (!$mail_sent) {
+                $message .= " Error: " . ($mail_error ?? 'Unknown error');
+            }
+
+            return $this->success([
+                'user_id' => $user->id,
+                'otp_sent' => $mail_sent,
+                'otp_debug' => (!$mail_sent || config('app.env') !== 'production' || $request->has('debug')) ? $otp : null,
+                'mail_driver' => $mailer_type,
+                'mail_error' => $mail_error
+            ], $message);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->error("Validation failed", 422, $e->errors());
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Register Error: ' . $e->getMessage());
+            return $this->error("Registration failed: " . $e->getMessage(), 500);
+        }
     }
 
   
