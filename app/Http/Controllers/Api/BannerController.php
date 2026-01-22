@@ -46,22 +46,30 @@ class BannerController extends ApiController
     {
         try {
             $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                'subtitle' => 'nullable|string|max:255',
-                'image' => 'required|string',
+                'title' => 'nullable|string|max:255',
+                'image' => 'required|image|max:5120', // Max 5MB
                 'link' => 'nullable|url',
-                'start_date' => 'nullable|date',
-                'end_date' => 'nullable|date|after_or_equal:start_date',
+                'type' => 'in:hero,carousel'
             ]);
 
-            $banner = Banner::create($validated);
+            $data = [
+                'title' => $validated['title'] ?? null,
+                'link' => $validated['link'] ?? null,
+                'type' => $validated['type'] ?? 'hero'
+            ];
+
+            if ($request->hasFile('image')) {
+                $data['image_path'] = $request->file('image')->store('banners', 'public');
+            }
+
+            $banner = Banner::create($data);
 
             return $this->success($banner, "Banner created successfully", 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->error("Validation failed", 422, $e->errors());
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Create Banner Error: ' . $e->getMessage());
-            return $this->error("Failed to create banner", 500);
+            return $this->error("Failed to create banner: " . $e->getMessage(), 500); // Exposed error for debugging
         }
     }
 
