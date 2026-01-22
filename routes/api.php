@@ -133,6 +133,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::delete('/categories/{id}', [AdminCategoryController::class, 'destroy']);
 
     // Discount Management
+    Route::post('/discounts/apply', [AdminDiscountController::class, 'apply']);
     Route::post('/discounts/category', [AdminDiscountController::class, 'applyToCategory']);
     Route::post('/discounts/all', [AdminDiscountController::class, 'applyToAll']);
     Route::post('/discounts/remove', [AdminDiscountController::class, 'removeDiscount']);

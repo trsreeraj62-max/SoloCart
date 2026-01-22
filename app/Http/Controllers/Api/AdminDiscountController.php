@@ -9,6 +9,18 @@ use Illuminate\Support\Facades\Log;
 class AdminDiscountController extends ApiController
 {
     /**
+     * Unified Apply Discount (Handles both Category and Global)
+     * Fixes 404 on /api/admin/discounts/apply
+     */
+    public function apply(Request $request)
+    {
+        if ($request->filled('category_id')) {
+            return $this->applyToCategory($request);
+        }
+        return $this->applyToAll($request);
+    }
+
+    /**
      * Apply discount to a specific category
      */
     public function applyToCategory(Request $request)
@@ -63,6 +75,7 @@ class AdminDiscountController extends ApiController
         try {
             $query = Product::query();
 
+            // If category_id provided, only reset that category. Otherwise reset all.
             if ($request->filled('category_id')) {
                 $query->where('category_id', $request->category_id);
             }
