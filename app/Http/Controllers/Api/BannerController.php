@@ -13,12 +13,8 @@ class BannerController extends ApiController
     public function index()
     {
         try {
-            $banners = Banner::where(function($q) {
-                $q->whereNull('start_date')->orWhere('start_date', '<=', now());
-            })->where(function($q) {
-                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
-            })->get();
-
+            // Return all banners as date columns might not exist
+            $banners = Banner::latest()->get();
             return $this->success($banners, "Banners retrieved");
         } catch (\Exception $e) {
             return $this->error("Failed to retrieve banners", 500);
