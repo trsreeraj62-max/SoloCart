@@ -13,7 +13,8 @@ use App\Http\Controllers\Api\{
     AdminUserController,
     ContactController,
     AdminDashboardController,
-    AdminProductController
+    AdminProductController,
+    AdminCategoryController
 };
 
 /*
@@ -123,4 +124,10 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('/banners', [BannerController::class, 'store']);
     Route::put('/banners/{id}', [BannerController::class, 'update']);
     Route::delete('/banners/{id}', [BannerController::class, 'destroy']);
+
+    // Categories Management
+    Route::get('/categories', [AdminCategoryController::class, 'index']);
+    Route::post('/categories', [AdminCategoryController::class, 'store']);
+    Route::put('/categories/{id}', [AdminCategoryController::class, 'update']);
+    Route::delete('/categories/{id}', [AdminCategoryController::class, 'destroy']);
 });
