@@ -45,6 +45,15 @@ class User extends Authenticatable
     {
         return $this->hasOne(Cart::class);
     }
+
+    /**
+     * Always store emails in lowercase to ensure uniqueness
+     */
+    public function setEmailAttribute($value)
+    {
+        $this->attributes['email'] = strtolower($value);
+    }
+
     public function getProfilePhotoUrlAttribute()
     {
         if ($this->profile_photo) {
