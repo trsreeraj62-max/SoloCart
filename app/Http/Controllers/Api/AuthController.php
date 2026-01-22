@@ -13,9 +13,12 @@ class AuthController extends ApiController
 {
     public function register(Request $request)
     {
+        // Normalize email to lowercase
+        $request->merge(['email' => strtolower($request->email)]);
+
         $request->validate([
             'name' => 'required|string',
-            'email' => 'required|email|unique:users',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'phone' => 'required',
         ]);
