@@ -6,9 +6,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
-        'https://solocart-frontend.onrender.com',
-    ],
+    'allowed_origins' => ['*'],
 
     'allowed_headers' => ['*'],
 
