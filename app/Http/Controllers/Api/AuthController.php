@@ -73,7 +73,9 @@ public function login(Request $request)
             'password' => 'required'
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        // Normalize email to lowercase
+        $email = strtolower($request->email);
+        $user = User::where('email', $email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return $this->error('Invalid credentials', 401);
