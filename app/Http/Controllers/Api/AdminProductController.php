@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Product;
+use App\Models\ProductImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class AdminProductController extends ApiController
 {
@@ -14,8 +17,8 @@ class AdminProductController extends ApiController
     public function index(Request $request)
     {
         try {
-            // Start query without global scopes if necessary, or just standard
-            $query = Product::with('category', 'images');
+            // Start query
+            $query = Product::with('category', 'images'); // No active scope for admin
 
             // Search functionality
             if ($request->filled('search')) {
@@ -44,24 +47,40 @@ class AdminProductController extends ApiController
     public function store(Request $request)
     {
         try {
-            $request->validate([
+            $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'price' => 'required|numeric|min:0',
                 'stock' => 'required|integer|min:0',
                 'category_id' => 'required|exists:categories,id',
-                'image' => 'nullable|image|max:2048'
+                'image' => 'nullable|image|max:5048', // 5MB max
+                'specifications' => 'nullable|string'
             ]);
 
-            $data = $request->except('image');
-            $data['slug'] = \Illuminate\Support\Str::slug($request->name) . '-' . uniqid();
-
-            // Handle image upload if present (Assuming standard handling or separate)
-            // For now, basic creation
+            // Create Product
+            $productData = $request->only(['name', 'description', 'price', 'stock', 'category_id', 'specifications']);
+            $productData['slug'] = \Illuminate\Support\Str::slug($request->name) . '-' . uniqid();
             
-            $product = Product::create($data);
+            $product = Product::create($productData);
+
+            // Handle Image Upload
+            if ($request->hasFile('image')) {
+                $path = $request->file('image')->store('products', 'public');
+                
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'image_path' => $path,
+                    'is_primary' => true
+                ]);
+            }
+
+            // Reload to include images
+            $product->load('images', 'category');
 
             return $this->success($product, 'Product created successfully', 201);
+
+        } catch (ValidationException $e) {
+            return $this->error('Validation failed', 422, $e->errors());
         } catch (\Exception $e) {
             Log::error('Admin Product Store Error: ' . $e->getMessage());
             return $this->error('Failed to create product', 500);
@@ -103,11 +122,32 @@ class AdminProductController extends ApiController
                 'price' => 'numeric|min:0',
                 'stock' => 'integer|min:0',
                 'category_id' => 'exists:categories,id',
+                'image' => 'nullable|image|max:5048'
             ]);
 
-            $product->update($request->all());
+            $product->update($request->except(['image', 'slug'])); // Keep slug stable usually
+
+            // Handle Image Update (Add new one as primary, or replace?)
+            // Simple logic: If new image, add it and make it primary
+            if ($request->hasFile('image')) {
+                $path = $request->file('image')->store('products', 'public');
+                
+                // Optional: Unset previous primary
+                ProductImage::where('product_id', $product->id)->update(['is_primary' => false]);
+
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'image_path' => $path,
+                    'is_primary' => true
+                ]);
+            }
+
+            $product->load('images', 'category');
 
             return $this->success($product, 'Product updated successfully');
+
+        } catch (ValidationException $e) {
+             return $this->error('Validation failed', 422, $e->errors());
         } catch (\Exception $e) {
             Log::error('Admin Product Update Error: ' . $e->getMessage());
             return $this->error('Failed to update product', 500);
@@ -125,6 +165,12 @@ class AdminProductController extends ApiController
             if (!$product) {
                 return $this->error('Product not found', 404);
             }
+
+            // Optionally delete images from storage
+            foreach($product->images as $image) {
+                Storage::disk('public')->delete($image->image_path);
+            }
+            $product->images()->delete();
 
             $product->delete();
 
