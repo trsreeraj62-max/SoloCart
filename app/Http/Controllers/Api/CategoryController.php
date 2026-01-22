@@ -13,10 +13,12 @@ class CategoryController extends ApiController
     public function index()
     {
         try {
-            $categories = Category::all();
+            // Select only necessary columns to avoid overhead
+            $categories = Category::select('id', 'name', 'slug', 'image')->get();
             return $this->success($categories, "Categories retrieved");
         } catch (\Exception $e) {
-            return $this->error("Failed to retrieve categories", 500);
+            \Illuminate\Support\Facades\Log::error('Category Index Error: ' . $e->getMessage());
+            return $this->error("Failed to retrieve categories: " . $e->getMessage(), 500);
         }
     }
 }
