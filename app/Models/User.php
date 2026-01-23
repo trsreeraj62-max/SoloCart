@@ -27,6 +27,8 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $appends = ['profile_photo_url'];
+
     protected function casts(): array
     {
         return [

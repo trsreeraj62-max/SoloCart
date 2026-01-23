@@ -67,6 +67,7 @@ Route::post('/otp/resend', [AuthController::class, 'resendOtp']);
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/profile', [AuthController::class, 'user']); // Alias for better semantics
     Route::post('/logout', [AuthController::class, 'logout']);
     
     // Profile
