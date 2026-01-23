@@ -26,6 +26,8 @@ php artisan migrate --force
 # Run Seeder (Safe: uses firstOrCreate)
 echo "Seeding default banners..."
 php artisan db:seed --class=BannerSeeder --force
+echo "Seeding admin user..."
+php artisan db:seed --class=AdminSeeder --force
 
 # Start Apache
 echo "Starting Apache..."
