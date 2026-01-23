@@ -27,7 +27,7 @@ COPY . .
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN composer install --no-dev --optimize-autoloader
 
-# Clear Laravel caches
+# Clear Laravel caches to ensure clean build
 RUN php artisan config:clear \
  && php artisan route:clear \
  && php artisan view:clear
@@ -40,9 +40,12 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# Expose port
+# Setup Entrypoint Script
+COPY docker-run.sh /usr/local/bin/docker-run.sh
+RUN chmod +x /usr/local/bin/docker-run.sh
+
+# Expose port (Documentation only, Render ignores this but good practice)
 EXPOSE 80
 
-# Run migrations and start apache in entrypoint if needed, or just start apache
-# Run migrations and seeders, then start Apache
-CMD ["sh", "-c", "php artisan storage:link && php artisan migrate --force && php artisan db:seed --class=BannerSeeder --force && apache2-foreground"]
+# Start command
+CMD ["/usr/local/bin/docker-run.sh"]

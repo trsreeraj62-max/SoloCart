@@ -121,21 +121,29 @@ class AdminProductController extends ApiController
                 return $this->error('Product not found', 404);
             }
 
-            $request->validate([
+            // Allow 'image' to be a file or string
+            $rules = [
                 'name' => 'string|max:255',
                 'price' => 'numeric|min:0',
                 'stock' => 'integer|min:0',
                 'category_id' => 'exists:categories,id',
-                'image' => 'nullable|image|max:5048',
                 'is_active' => 'boolean'
-            ]);
+            ];
+
+            if ($request->hasFile('image')) {
+                $rules['image'] = 'image|max:5048';
+            } else {
+                $rules['image'] = 'nullable|string';
+            }
+
+            $request->validate($rules);
 
             $product->update($request->except(['image', 'slug'])); // Keep slug stable usually
 
-            // Handle Image Update (Add new one as primary, or replace?)
-            // Simple logic: If new image, add it and make it primary
+            // Handle Image Update
             if ($request->hasFile('image')) {
                 $path = $request->file('image')->store('products', 'public');
+                Log::info("Admin Product Image Uploaded to: " . $path);
                 
                 // Optional: Unset previous primary
                 ProductImage::where('product_id', $product->id)->update(['is_primary' => false]);

@@ -91,21 +91,38 @@ class BannerController extends ApiController
                 return $this->error("Banner not found", 404);
             }
 
-            $validated = $request->validate([
+            // Allow 'image' to be a file (upload) or string (existing url/path)
+            $rules = [
                 'title' => 'sometimes|string|max:255',
                 'subtitle' => 'nullable|string|max:255',
-                'image' => 'sometimes|string', // Wait, file upload logic is missing here in original too? Admin only sends path string? Or file?
-                // Correcting update validation for image file
-                'image_file' => 'nullable|image|max:5120', 
                 'link' => 'nullable|url',
                 'start_date' => 'nullable|date',
                 'end_date' => 'nullable|date|after_or_equal:start_date',
                 'is_active' => 'boolean'
-            ]);
+            ];
 
-            // Handle image logic if file provided
             if ($request->hasFile('image')) {
-                 $validated['image_path'] = $request->file('image')->store('banners', 'public');
+                $rules['image'] = 'image|max:5120';
+            } else {
+                $rules['image'] = 'nullable|string';
+            }
+
+            $validated = $request->validate($rules);
+
+            // Handle Image Upload
+            if ($request->hasFile('image')) {
+                $validated['image_path'] = $request->file('image')->store('banners', 'public');
+                // Remove 'image' from validated so it doesn't try to update a non-existent column if 'image' isn't in fillable, 
+                // but our model has 'image' in fillable which creates confusion. 
+                // We should prioritize image_path.
+                unset($validated['image']);
+            } elseif (isset($validated['image']) && is_string($validated['image'])) {
+                // If it's a string, it might be the existing path or URL. 
+                // If it's a full URL, we might want to extract the relative path if it matches our storage, 
+                // but for now, we just trust the storage logic or assume it is the path.
+                // However, the DB column is image_path. 'image' alias exists in model fillable but we should use image_path.
+                 $validated['image_path'] = $validated['image']; // logic to keep existing if string passed
+                 unset($validated['image']);
             }
 
             $banner->update($validated);
