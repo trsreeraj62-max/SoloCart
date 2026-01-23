@@ -234,16 +234,43 @@ class AuthController extends ApiController
 
     public function updateProfile(Request $request)
     {
-        $user = Auth::user();
-        $request->validate([
-            'name' => 'sometimes|string',
-            'phone' => 'sometimes',
-            'address' => 'sometimes',
-        ]);
+        try {
+            $user = Auth::user();
+            
+            $validated = $request->validate([
+                'name' => 'sometimes|string|max:255',
+                'email' => 'sometimes|email|unique:users,email,' . $user->id,
+                'phone' => 'sometimes|string|max:20',
+                'address' => 'sometimes|string|max:500',
+                'profile_image' => 'sometimes|image|max:5120' // 5MB max
+            ]);
 
-        $user->update($request->only(['name', 'phone', 'address']));
+            // Handle profile image upload if provided
+            if ($request->hasFile('profile_image')) {
+                // Delete old image if exists
+                if ($user->profile_photo && \Storage::disk('public')->exists($user->profile_photo)) {
+                    \Storage::disk('public')->delete($user->profile_photo);
+                }
+                
+                $path = $request->file('profile_image')->store('profiles', 'public');
+                $validated['profile_photo'] = $path;
+                unset($validated['profile_image']); // Remove temp key
+            }
 
-        return $this->success($user, 'Profile updated');
+            // Update user data
+            $user->update(array_filter($validated));
+            
+            // Reload to get updated profile_photo_url accessor
+            $user->refresh();
+
+            return $this->success($user, 'Profile updated successfully');
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->error('Validation failed', 422, $e->errors());
+        } catch (\Exception $e) {
+            \Log::error('Profile Update Error: ' . $e->getMessage());
+            return $this->error('Profile update failed: ' . $e->getMessage(), 500);
+        }
     }
 
     public function uploadProfilePhoto(Request $request)

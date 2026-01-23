@@ -68,6 +68,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    
+    // Profile
+    Route::post('/profile/update', [AuthController::class, 'updateProfile']);
+    Route::post('/profile/photo', [AuthController::class, 'uploadProfilePhoto']);
 
     // Cart
     Route::get('/cart', [CartController::class, 'index']);
