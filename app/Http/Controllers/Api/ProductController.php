@@ -14,7 +14,9 @@ class ProductController extends ApiController
     public function index(Request $request)
     {
         try {
-            $query = Product::with(['category', 'images'])->active();
+            \Illuminate\Support\Facades\Log::info('API Product Index Request', $request->all());
+
+            $query = Product::with(['category', 'images'])->active(); // Uses active scope (is_active + stock)
 
             if ($request->filled('category_id')) {
                 $query->where('category_id', $request->category_id);
@@ -31,6 +33,9 @@ class ProductController extends ApiController
             if ($request->filled('max_price')) {
                 $query->where('price', '<=', $request->max_price);
             }
+            
+            // Log the query sql for debugging
+            // \Illuminate\Support\Facades\Log::debug($query->toSql());
 
             // Return all or paginate
             if ($request->has('all')) {
@@ -38,6 +43,8 @@ class ProductController extends ApiController
             } else {
                 $products = $query->latest()->paginate(20);
             }
+            
+            \Illuminate\Support\Facades\Log::info('API Product Index Result Count: ' . ($products instanceof \Illuminate\Pagination\LengthAwarePaginator ? $products->total() : $products->count()));
 
             return $this->success($products, "Products retrieved");
         } catch (\Exception $e) {

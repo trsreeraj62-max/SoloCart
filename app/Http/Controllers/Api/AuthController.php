@@ -19,18 +19,38 @@ class AuthController extends ApiController
 
             $request->validate([
                 'name' => 'required|string',
-                'email' => 'required|email|unique:users,email',
+                'email' => 'required|email',
                 'password' => 'required|min:6',
                 'phone' => 'required',
             ]);
 
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'phone' => $request->phone,
-                'role' => 'user',
-            ]);
+            $user = User::where('email', $request->email)->first();
+
+            if ($user && $user->email_verified_at) {
+                // Return 422 with exact format expected by frontend validation errors
+                throw \Illuminate\Validation\ValidationException::withMessages(['email' => 'The email has already been taken.']);
+            }
+
+            if ($user) {
+                // User exists but is UNVERIFIED -> Update info
+                $user->update([
+                    'name' => $request->name,
+                    'password' => Hash::make($request->password),
+                    'phone' => $request->phone,
+                    'role' => 'user', 
+                ]);
+                \Illuminate\Support\Facades\Log::info("Existing unverified user re-registering: {$user->email}");
+            } else {
+                // New User
+                $user = User::create([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'password' => Hash::make($request->password),
+                    'phone' => $request->phone,
+                    'role' => 'user',
+                ]);
+                \Illuminate\Support\Facades\Log::info("New user registered: {$user->email}");
+            }
 
             // Send OTP
             $otp = rand(100000, 999999);
@@ -39,21 +59,25 @@ class AuthController extends ApiController
             $mail_error = null;
             $mailer_type = config('mail.default');
 
+            \Illuminate\Support\Facades\Log::info("Attempting to send OTP to {$user->email} using mailer: {$mailer_type}");
+
             try {
                 if ($mailer_type !== 'log') {
                     \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
                     $mail_sent = true;
+                    \Illuminate\Support\Facades\Log::info("OTP Email sent successfully to {$user->email}");
                 } else {
                     $mail_error = "Server is in 'LOG' mode. No real email sent.";
+                    \Illuminate\Support\Facades\Log::warning($mail_error);
                 }
             } catch (\Exception $e) {
                 $mail_error = $e->getMessage();
-                \Illuminate\Support\Facades\Log::error('OTP Mail Error: ' . $mail_error);
+                \Illuminate\Support\Facades\Log::error('OTP Mail Error for ' . $user->email . ': ' . $mail_error);
             }
             
             $message = $mail_sent ? 'User registered. Please verify OTP sent to email.' : 'User registered but OTP mail failed.';
             if (!$mail_sent) {
-                $message .= " Error: " . ($mail_error ?? 'Unknown error');
+                $message .= " Error: " . ($mail_error ?? 'Check server logs');
             }
 
             return $this->success([
@@ -72,9 +96,7 @@ class AuthController extends ApiController
         }
     }
 
-  
-
-public function login(Request $request)
+    public function login(Request $request)
     {
         try {
             $request->validate([
@@ -181,8 +203,10 @@ public function login(Request $request)
             if ($mailer_type !== 'log') {
                 \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
                 $mail_sent = true;
+                \Illuminate\Support\Facades\Log::info("Resend OTP Email sent successfully to {$user->email}");
             } else {
                 $mail_error = "Server is in 'LOG' mode. No real email sent.";
+                \Illuminate\Support\Facades\Log::warning($mail_error);
             }
         } catch (\Exception $e) {
             $mail_error = $e->getMessage();

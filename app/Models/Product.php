@@ -19,17 +19,26 @@ class Product extends Model
         'discount_percent',
         'discount_start_date',
         'discount_end_date',
-        'specifications'
+        'specifications',
+        'is_active'
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'price' => 'decimal:2',
+        'discount_start_date' => 'datetime',
+        'discount_end_date' => 'datetime',
     ];
 
     protected $appends = ['image_url'];
 
     /**
-     * Scope for active products (could be status based, but here we just check stock)
+     * Scope for active products
+     * filters by is_active flag AND stock availability
      */
     public function scopeActive($query)
     {
-        return $query->where('stock', '>', 0);
+        return $query->where('is_active', true)->where('stock', '>', 0);
     }
 
     public function category()

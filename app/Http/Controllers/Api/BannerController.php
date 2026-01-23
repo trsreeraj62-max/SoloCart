@@ -10,13 +10,17 @@ class BannerController extends ApiController
     /**
      * Get active banners
      */
+    /**
+     * Get active banners
+     */
     public function index()
     {
         try {
-            // Return all banners as date columns might not exist
-            $banners = Banner::latest()->get();
+            // Apply active scope to filter filtering by is_active and dates
+            $banners = Banner::active()->latest()->get();
             return $this->success($banners, "Banners retrieved");
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('API Banner Index Error: ' . $e->getMessage());
             return $this->error("Failed to retrieve banners", 500);
         }
     }
@@ -45,13 +49,19 @@ class BannerController extends ApiController
                 'title' => 'nullable|string|max:255',
                 'image' => 'required|image|max:5120', // Max 5MB
                 'link' => 'nullable|url',
-                'type' => 'in:hero,carousel'
+                'type' => 'in:hero,carousel',
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date',
+                'is_active' => 'boolean'
             ]);
 
             $data = [
                 'title' => $validated['title'] ?? null,
                 'link' => $validated['link'] ?? null,
-                'type' => $validated['type'] ?? 'hero'
+                'type' => $validated['type'] ?? 'hero',
+                'start_date' => $validated['start_date'] ?? null,
+                'end_date' => $validated['end_date'] ?? null,
+                'is_active' => $request->has('is_active') ? $validated['is_active'] : true
             ];
 
             if ($request->hasFile('image')) {
@@ -82,13 +92,21 @@ class BannerController extends ApiController
             }
 
             $validated = $request->validate([
-                'title' => 'sometimes|required|string|max:255',
+                'title' => 'sometimes|string|max:255',
                 'subtitle' => 'nullable|string|max:255',
-                'image' => 'sometimes|required|string',
+                'image' => 'sometimes|string', // Wait, file upload logic is missing here in original too? Admin only sends path string? Or file?
+                // Correcting update validation for image file
+                'image_file' => 'nullable|image|max:5120', 
                 'link' => 'nullable|url',
                 'start_date' => 'nullable|date',
                 'end_date' => 'nullable|date|after_or_equal:start_date',
+                'is_active' => 'boolean'
             ]);
+
+            // Handle image logic if file provided
+            if ($request->hasFile('image')) {
+                 $validated['image_path'] = $request->file('image')->store('banners', 'public');
+            }
 
             $banner->update($validated);
 

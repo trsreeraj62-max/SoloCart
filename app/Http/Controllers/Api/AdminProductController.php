@@ -54,12 +54,16 @@ class AdminProductController extends ApiController
                 'stock' => 'required|integer|min:0',
                 'category_id' => 'required|exists:categories,id',
                 'image' => 'nullable|image|max:5048', // 5MB max
-                'specifications' => 'nullable|string'
+                'specifications' => 'nullable|string',
+                'is_active' => 'boolean'
             ]);
 
             // Create Product
             $productData = $request->only(['name', 'description', 'price', 'stock', 'category_id', 'specifications']);
             $productData['slug'] = \Illuminate\Support\Str::slug($request->name) . '-' . uniqid();
+            
+            // Default to true if not provided (though DB defaults to true)
+            $productData['is_active'] = $request->has('is_active') ? $request->is_active : true;
             
             $product = Product::create($productData);
 
@@ -122,7 +126,8 @@ class AdminProductController extends ApiController
                 'price' => 'numeric|min:0',
                 'stock' => 'integer|min:0',
                 'category_id' => 'exists:categories,id',
-                'image' => 'nullable|image|max:5048'
+                'image' => 'nullable|image|max:5048',
+                'is_active' => 'boolean'
             ]);
 
             $product->update($request->except(['image', 'slug'])); // Keep slug stable usually
