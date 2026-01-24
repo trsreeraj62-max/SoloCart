@@ -51,6 +51,35 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/banners', [BannerController::class, 'index']);
 Route::post('/contact', [ContactController::class, 'store']);
 
+// Temporary route for Render free tier migration
+Route::get('/system/migrate', function() {
+    if (request('key') !== 'render_fix_2026') {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+    
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
+        
+        \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+        $optimizeOutput = \Illuminate\Support\Facades\Artisan::output();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'System updated successfully',
+            'output' => [
+                'migration' => $migrateOutput,
+                'optimization' => $optimizeOutput
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
+
 /*
 |--------------------------------------------------------------------------
 | AUTH
