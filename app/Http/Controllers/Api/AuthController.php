@@ -238,11 +238,12 @@ class AuthController extends ApiController
             ]);
         }
 
-        return $this->success([
+        // HACK: Force OTP to show in frontend Alert because user cannot check email/logs
+        // Return as error so it pops up visually
+        return $this->error("DEBUG MODE: Your OTP is {$otp}. Email service is pending verification.", 422, [
             'otp_sent' => true,
-            'debug_otp' => $otp, // Temporarily exposed for testing
-            'mail_driver' => $mailer_type
-        ], 'New OTP sent to email.');
+            'debug_otp' => $otp
+        ]);
     }
 
     public function logout(Request $request)
