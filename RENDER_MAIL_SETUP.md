@@ -39,3 +39,5 @@ Sign up at [Brevo.com](https://www.brevo.com/), go to **SMTP & API**, and get yo
 - **Registration Issue:** The system was blocking "existing" emails even if they were unverified, leaving users stuck. This has been fixed in the code.
 - **Email Issue:** Render does not have a built-in mail server. You **MUST** use an external SMTP provider like Brevo or Gmail.
 - **Logs:** I have added detailed logs. You can now check "Logs" in Render to see "OTP Email sent successfully" or specific error messages.
+- **CRITICAL:** After updating Env Keys on Render, you MUST clear the cache or the old (Gmail) settings will stay active.
+  - Run: `https://solocart-backend.onrender.com/api/system/maintenance?key=render_fix_2026&optimize=1`
