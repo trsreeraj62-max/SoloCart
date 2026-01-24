@@ -24,6 +24,8 @@ class AuthController extends ApiController
                 'phone' => 'required',
             ]);
 
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
             $user = User::where('email', $request->email)->first();
 
             if ($user && $user->email_verified_at) {
@@ -78,12 +80,17 @@ class AuthController extends ApiController
             $message = $mail_sent ? 'User registered. Please verify OTP sent to email.' : 'User registered but OTP mail failed.';
             if (!$mail_sent) {
                 // STRICT MODE: Fail if email fails
+                // ROLLBACK USER CREATION
+                \Illuminate\Support\Facades\DB::rollBack();
+                
                 return $this->error($mail_error ?? 'OTP email failed to send', 500, [
                     'mail_driver' => $mailer_type,
                     'is_log_mode' => $mailer_type === 'log',
                     'debug_otp' => $otp // Still providing OTP for developer rescue in non-prod
                 ]);
             }
+
+            \Illuminate\Support\Facades\DB::commit();
 
             return $this->success([
                 'user_id' => $user->id,
@@ -92,8 +99,10 @@ class AuthController extends ApiController
             ], 'User registered. Please verify OTP sent to email.');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
             return $this->error("Validation failed", 422, $e->errors());
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
             \Illuminate\Support\Facades\Log::error('Register Error: ' . $e->getMessage());
             return $this->error("Registration failed: " . $e->getMessage(), 500);
         }
