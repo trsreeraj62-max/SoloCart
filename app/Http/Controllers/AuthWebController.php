@@ -64,6 +64,8 @@ class AuthWebController extends Controller
                 'phone' => 'nullable'
             ]);
             
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -77,11 +79,22 @@ class AuthWebController extends Controller
             
             \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
             
+            \Illuminate\Support\Facades\DB::commit();
+
             session(['otp_user_id' => $user->id]);
             return redirect()->route('otp.verify')->with('info', 'Please check your email for the verification code.');
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
             \Illuminate\Support\Facades\Log::error('Register Error: ' . $e->getMessage());
-            return back()->with('error', 'Registration failed. Please try again.')->withInput();
+            
+            $msg = 'Registration failed. ';
+            if (str_contains($e->getMessage(), 'Connection timed out')) {
+                $msg .= 'Email server timeout. Please try again later.';
+            } else {
+                $msg .= 'Please try again.';
+            }
+            
+            return back()->with('error', $msg)->withInput();
         }
     }
     
