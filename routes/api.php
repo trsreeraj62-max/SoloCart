@@ -118,18 +118,75 @@ Route::get('/system/maintenance', function() {
     // 5. Debug: Check if orders exist
     if (request()->has('debug_orders')) {
         $totalOrders = \App\Models\Order::count();
-        $recentOrders = \App\Models\Order::with('user:id,name,email')
+        $recentOrders = \App\Models\Order::with(['user:id,name,email', 'items.product:id,name,price'])
             ->latest()
-            ->take(5)
-            ->get(['id', 'user_id', 'total', 'status', 'created_at']);
+            ->take(10)
+            ->get();
         
         $output['debug_orders'] = [
             'total_orders_in_db' => $totalOrders,
-            'recent_5_orders' => $recentOrders
+            'recent_orders' => $recentOrders,
+            'order_items_count' => \App\Models\OrderItem::count(),
+            'database_info' => [
+                'orders_table_exists' => \Illuminate\Support\Facades\Schema::hasTable('orders'),
+                'order_items_table_exists' => \Illuminate\Support\Facades\Schema::hasTable('order_items'),
+            ]
         ];
     }
 
-    // 6. Create Test User Account
+    // 6. Create Test Order
+    if (request()->has('create_test_order')) {
+        try {
+            // Find or create a test user
+            $testUser = \App\Models\User::where('email', 'testbuyer@test.com')->first();
+            if (!$testUser) {
+                $testUser = \App\Models\User::create([
+                    'name' => 'Test Buyer',
+                    'email' => 'testbuyer@test.com',
+                    'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                    'role' => 'user',
+                    'email_verified_at' => now(),
+                ]);
+            }
+
+            // Get first available product
+            $product = \App\Models\Product::where('stock', '>', 0)->first();
+            
+            if (!$product) {
+                $output['test_order'] = 'No products available in stock';
+            } else {
+                $order = \App\Models\Order::create([
+                    'user_id' => $testUser->id,
+                    'status' => 'pending',
+                    'total' => $product->price + 70, // price + shipping + fee
+                    'address' => '123 Test Street, Test City, 12345',
+                    'payment_method' => 'cod',
+                    'payment_status' => 'unpaid',
+                ]);
+
+                \App\Models\OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $product->id,
+                    'quantity' => 1,
+                    'price' => $product->price,
+                ]);
+
+                $output['test_order'] = [
+                    'success' => true,
+                    'order_id' => $order->id,
+                    'order' => $order->load(['user', 'items.product']),
+                    'message' => 'Test order created successfully'
+                ];
+            }
+        } catch (\Exception $e) {
+            $output['test_order'] = [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    // 7. Create Test User Account
     if (request()->has('create_user')) {
         $email = request('email', 'trsreeraj07@gmail.com');
         $name = request('name', 'sreeraj');

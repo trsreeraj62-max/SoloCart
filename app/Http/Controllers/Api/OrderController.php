@@ -22,6 +22,8 @@ class OrderController extends ApiController
      */
     public function store(Request $request)
     {
+        \Illuminate\Support\Facades\Log::info('Order Creation Request:', $request->all());
+
         $request->validate([
             'address' => 'required|string',
             'payment_method' => 'required|in:cod,upi,card,netbanking',
@@ -41,12 +43,12 @@ class OrderController extends ApiController
             if ($request->source === 'cart') {
                 $cart = $user->cart;
                 if (!$cart || $cart->items->count() === 0) {
-                    return $this->error("Cart is empty");
+                    return $this->error("Cart is empty", 400);
                 }
                 foreach ($cart->items as $item) {
                      // Check stock
                     if ($item->product->stock < $item->quantity) {
-                         return $this->error("Product {$item->product->name} is out of stock (Available: {$item->product->stock})");
+                         return $this->error("Product {$item->product->name} is out of stock (Available: {$item->product->stock})", 400);
                     }
 
                     $price = $item->product->price - ($item->product->price * ($item->product->discount_percent / 100));
@@ -62,9 +64,12 @@ class OrderController extends ApiController
                 // Direct buy
                 foreach ($request->items as $itemRequest) {
                     $product = Product::find($itemRequest['product_id']);
+                    if (!$product) {
+                        return $this->error("Product not found", 404);
+                    }
                      // Check stock
                     if ($product->stock < $itemRequest['quantity']) {
-                         return $this->error("Product {$product->name} is out of stock (Available: {$product->stock})");
+                         return $this->error("Product {$product->name} is out of stock (Available: {$product->stock})", 400);
                     }
                     
                     $price = $product->price - ($product->price * ($product->discount_percent / 100));
@@ -77,6 +82,8 @@ class OrderController extends ApiController
                 }
             }
 
+            \Illuminate\Support\Facades\Log::info('Creating order with items:', $itemsData);
+
             $order = $this->orderService->createOrder($user, [
                 'subtotal' => $subtotal,
                 'address' => $request->address,
@@ -84,11 +91,19 @@ class OrderController extends ApiController
                 'clear_cart' => $clearCart
             ], $itemsData);
 
+            // Reload order with relationships
+            $order->load(['items.product', 'user']);
+
+            \Illuminate\Support\Facades\Log::info('Order created successfully:', ['order_id' => $order->id]);
+
             return $this->success($order, "Order placed successfully", 201);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::error('Order Validation Error:', $e->errors());
+            return $this->error($e->errors(), 422);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Place Order Error: ' . $e->getMessage());
-            return $this->error("Failed to place order", 500);
+            \Illuminate\Support\Facades\Log::error('Place Order Error: ' . $e->getMessage() . ' | Stack: ' . $e->getTraceAsString());
+            return $this->error("Failed to place order: " . $e->getMessage(), 500);
         }
     }
 
@@ -97,8 +112,20 @@ class OrderController extends ApiController
      */
     public function index()
     {
-        $orders = Auth::user()->orders()->with('items.product')->latest()->paginate(10);
-        return $this->success($orders, "Orders retrieved successfully");
+        try {
+            $orders = Auth::user()->orders()->with('items.product')->latest()->paginate(10);
+            
+            \Illuminate\Support\Facades\Log::info('User orders retrieved:', [
+                'user_id' => Auth::id(),
+                'total' => $orders->total(),
+                'count' => $orders->count()
+            ]);
+            
+            return $this->success($orders, "Orders retrieved successfully");
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Get Orders Error: ' . $e->getMessage());
+            return $this->error("Failed to retrieve orders", 500);
+        }
     }
 
     /**

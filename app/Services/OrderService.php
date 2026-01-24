@@ -37,8 +37,16 @@ class OrderService
      */
     public function createOrder($user, array $data, $items = [])
     {
+        Log::info('OrderService: Starting order creation', [
+            'user_id' => $user->id,
+            'data' => $data,
+            'items_count' => count($items)
+        ]);
+
         return DB::transaction(function () use ($user, $data, $items) {
             $fees = $this->calculateFees($data['subtotal']);
+            
+            Log::info('OrderService: Fees calculated', $fees);
             
             $order = Order::create([
                 'user_id' => $user->id,
@@ -48,6 +56,8 @@ class OrderService
                 'payment_method' => $data['payment_method'] ?? 'pending',
                 'payment_status' => 'unpaid',
             ]);
+
+            Log::info('OrderService: Order created', ['order_id' => $order->id]);
 
             foreach ($items as $item) {
                 OrderItem::create([
@@ -59,18 +69,28 @@ class OrderService
 
                 // Decrement stock
                 Product::where('id', $item['product_id'])->decrement('stock', $item['quantity']);
+                
+                Log::info('OrderService: Item added', [
+                    'order_id' => $order->id,
+                    'product_id' => $item['product_id'],
+                    'quantity' => $item['quantity']
+                ]);
             }
 
             // If created from cart, clear it
             if (isset($data['clear_cart']) && $data['clear_cart']) {
                 $user->cart?->items()->delete();
+                Log::info('OrderService: Cart cleared', ['user_id' => $user->id]);
             }
 
             if ($order->payment_method === 'cod') {
                 $order->update(['status' => 'approved']);
                 $this->sendNotification($order, 'confirmation');
+                Log::info('OrderService: COD order auto-approved', ['order_id' => $order->id]);
             }
 
+            Log::info('OrderService: Order creation completed', ['order_id' => $order->id]);
+            
             return $order;
         });
     }
