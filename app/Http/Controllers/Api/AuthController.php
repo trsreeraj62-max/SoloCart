@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Services\BrevoMailService;
 
 class AuthController extends ApiController
 {
@@ -144,90 +145,64 @@ class AuthController extends ApiController
 
     public function verifyOtp(Request $request)
     {
-        // Strict Validation: Require identifiers + OTP
         $request->validate([
-            'user_id' => 'required_without:email|exists:users,id',
-            'email' => 'required_without:user_id|email|exists:users,email',
-            'otp' => 'required|digits:6'
+            'email' => 'required|email',
+            'otp' => 'required|digits:6',
         ]);
 
-        try {
-            // Resolve User
-            if ($request->filled('user_id')) {
-                $user = User::find($request->user_id);
-            } else {
-                $user = User::where('email', strtolower($request->email))->first();
-            }
+        // Key based on EMAIL not ID
+        $storedOtp = Cache::get('otp_' . $request->email);
 
-            // Retrieve OTP from secure cache
-            $cachedOtp = Cache::get('otp_' . $user->id);
-
-            // Validation Logic
-            if (!$cachedOtp) {
-                return $this->error('OTP has expired. Please request a new one.', 400);
-            }
-
-            if ($cachedOtp != $request->otp) {
-                return $this->error('Invalid OTP provided.', 400); // 400 Bad Request
-            }
-
-            // Success Flow
-            // 1. Invalidate OTP (Single Use Enforcement)
-            Cache::forget('otp_' . $user->id);
-
-            // 2. Verify User
-            $user->update([
-                'email_verified_at' => now(), 
-                'last_login_at' => now()
-            ]);
-
-            // 3. Issue Token
-            $token = $user->createToken('auth_token')->plainTextToken;
-
-            return $this->success([
-                'token' => $token,
-                'user' => $user,
-                'token_type' => 'Bearer',
-            ], 'Email verified and logged in successfully.');
-
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('OTP Verify Error: ' . $e->getMessage());
-            return $this->error('Verification failed.', 500);
+        if (!$storedOtp || $storedOtp != $request->otp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired OTP',
+            ], 422);
         }
+
+        Cache::forget('otp_' . $request->email);
+
+        $user = User::where('email', $request->email)->firstOrFail();
+        
+        // Update verification status
+        if (!$user->email_verified_at) {
+            $user->email_verified_at = now();
+            $user->save();
+        }
+        $user->update(['last_login_at' => now()]);
+        
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP verified successfully',
+            'token' => $token,
+            'user' => $user,
+        ], 200);
     }
     
-    public function resendOtp(Request $request, \App\Services\BrevoService $brevoService)
+    public function resendOtp(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:users,email'
+            'email' => 'required|email|exists:users,email',
         ]);
 
-        try {
-            $user = User::where('email', strtolower($request->email))->first();
+        $otp = random_int(100000, 999999);
 
-            // Rate Limiting Check
-            if (Cache::has('otp_rate_' . $user->id)) {
-                 return $this->error('Please wait before requesting another OTP.', 429);
-            }
+        // Store by EMAIL key
+        Cache::put(
+            'otp_' . $request->email,
+            $otp,
+            now()->addMinutes(5)
+        );
 
-            // Generate New OTP
-            $otp = rand(100000, 999999);
-            Cache::put('otp_' . $user->id, $otp, 600);
-            Cache::put('otp_rate_' . $user->id, true, 60); // 1 minute cooldown
+        // Use the new BrevoMailService
+        BrevoMailService::sendOtp($request->email, $otp);
 
-            // Send via Brevo
-            $mailSent = $brevoService->sendOtp($user->email, $otp, $user->name);
-
-            if (!$mailSent) {
-                return $this->error('Unable to send OTP at this time.', 503);
-            }
-
-            return $this->success([], 'A new verification code has been sent to your email.');
-
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Resend OTP Error: ' . $e->getMessage());
-            return $this->error('Something went wrong.', 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP sent successfully to your email',
+        ], 200);
     }
 
     public function logout(Request $request)
