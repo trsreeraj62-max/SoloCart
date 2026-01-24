@@ -126,6 +126,14 @@ class OrderController extends ApiController
      */
     public function index(Request $request)
     {
+        // DEBUG: Temporary check as requested
+        dd([
+          'auth_id' => auth()->id(),
+          'request_user_id' => $request->user()->id, // Added this one too just in case
+          'orders_in_db' => \App\Models\Order::count(),
+          'my_orders' => \App\Models\Order::where('user_id', auth()->id())->count(),
+        ]);
+
         try {
             $userId = $request->user()->id;
             \Illuminate\Support\Facades\Log::info('Fetching orders for user', ['user_id' => $userId]);
