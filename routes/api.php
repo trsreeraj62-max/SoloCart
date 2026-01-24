@@ -129,6 +129,30 @@ Route::get('/system/maintenance', function() {
         ];
     }
 
+    // 6. Create Test User Account
+    if (request()->has('create_user')) {
+        $email = request('email', 'trsreeraj07@gmail.com');
+        $name = request('name', 'sreeraj');
+        $password = request('password', 'sreeraj');
+        $role = request('role', 'user'); // 'user' or 'admin'
+        
+        $existingUser = \App\Models\User::where('email', $email)->first();
+        
+        if ($existingUser) {
+            $output['user_creation'] = "User {$email} already exists (ID: {$existingUser->id}, Role: {$existingUser->role})";
+        } else {
+            $user = \App\Models\User::create([
+                'name' => $name,
+                'email' => $email,
+                'password' => \Illuminate\Support\Facades\Hash::make($password),
+                'role' => $role,
+                'email_verified_at' => now(), // Auto-verify for testing
+            ]);
+            
+            $output['user_creation'] = "User created successfully! Email: {$email}, Password: {$password}, Role: {$role}, ID: {$user->id}";
+        }
+    }
+
     return response()->json([
         'success' => true,
         'message' => 'System maintenance executed',
