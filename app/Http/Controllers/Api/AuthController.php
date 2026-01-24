@@ -77,16 +77,19 @@ class AuthController extends ApiController
             
             $message = $mail_sent ? 'User registered. Please verify OTP sent to email.' : 'User registered but OTP mail failed.';
             if (!$mail_sent) {
-                $message .= " Error: " . ($mail_error ?? 'Check server logs');
+                // STRICT MODE: Fail if email fails
+                return $this->error($mail_error ?? 'OTP email failed to send', 500, [
+                    'mail_driver' => $mailer_type,
+                    'is_log_mode' => $mailer_type === 'log',
+                    'debug_otp' => $otp // Still providing OTP for developer rescue in non-prod
+                ]);
             }
 
             return $this->success([
                 'user_id' => $user->id,
-                'otp_sent' => $mail_sent,
-                'otp_debug' => $otp, // FORCE SHOW OTP for debugging
-                'mail_driver' => $mailer_type,
-                'mail_error' => $mail_error
-            ], $message);
+                'otp_sent' => true,
+                'mail_driver' => $mailer_type
+            ], 'User registered. Please verify OTP sent to email.');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->error("Validation failed", 422, $e->errors());
@@ -218,12 +221,17 @@ class AuthController extends ApiController
             \Illuminate\Support\Facades\Log::error('Resend OTP Mail Error: ' . $mail_error . ' | Trace: ' . $e->getTraceAsString());
         }
 
+        if (!$mail_sent) {
+             return $this->error($mail_error ?? 'Failed to send OTP email', 500, [
+                'mail_driver' => $mailer_type,
+                'debug_otp' => $otp
+            ]);
+        }
+
         return $this->success([
-            'otp_sent' => $mail_sent,
-            'otp_debug' => $otp, // FORCE SHOW OTP for debugging
-            'mail_driver' => $mailer_type,
-            'mail_error' => $mail_error
-        ], $mail_sent ? 'New OTP sent to email.' : 'Failed to send OTP email: ' . ($mail_error ?? 'Unknown error'));
+            'otp_sent' => true,
+            'mail_driver' => $mailer_type
+        ], 'New OTP sent to email.');
     }
 
     public function logout(Request $request)

@@ -210,12 +210,26 @@ Route::get('/system/maintenance', function() {
         }
     }
 
-    // 7. Create Test User Account
+    // 7. Test Email Configuration
+    if (request()->has('test_email')) {
+        try {
+            $to = request('email', 'trsreeraj07@gmail.com');
+            \Illuminate\Support\Facades\Mail::raw('SoloCart API Email Test Successful!', function ($message) use ($to) {
+                $message->to($to)
+                        ->subject('SoloCart API Test');
+            });
+            $output['test_email'] = "Email sent successfully to {$to} via " . config('mail.default');
+        } catch (\Exception $e) {
+            $output['test_email_error'] = $e->getMessage();
+        }
+    }
+
+    // 8. Create Test User Account
     if (request()->has('create_user')) {
         // ... (keep existing)
     }
 
-    // 8. Simulate Order Creation (Debug)
+    // 9. Simulate Order Creation (Debug)
     if (request()->has('simulate_order')) {
         try {
             $userId = request('user_id');
