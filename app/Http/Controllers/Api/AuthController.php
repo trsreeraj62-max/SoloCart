@@ -201,6 +201,11 @@ class AuthController extends ApiController
 
         try {
             if ($mailer_type !== 'log') {
+                // Force debug mode for SMTP
+                if ($mailer_type === 'smtp') {
+                    config(['mail.mailers.smtp.local_domain' => env('MAIL_EHLO_DOMAIN', 'localhost')]);
+                }
+                
                 \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
                 $mail_sent = true;
                 \Illuminate\Support\Facades\Log::info("Resend OTP Email sent successfully to {$user->email}");
@@ -210,7 +215,7 @@ class AuthController extends ApiController
             }
         } catch (\Exception $e) {
             $mail_error = $e->getMessage();
-            \Illuminate\Support\Facades\Log::error('Resend OTP Mail Error: ' . $mail_error);
+            \Illuminate\Support\Facades\Log::error('Resend OTP Mail Error: ' . $mail_error . ' | Trace: ' . $e->getTraceAsString());
         }
 
         return $this->success([
