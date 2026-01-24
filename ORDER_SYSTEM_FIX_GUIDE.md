@@ -174,17 +174,14 @@ Headers:
 {
   "success": true,
   "message": "Orders retrieved successfully",
-  "data": {
-    "current_page": 1,
-    "data": [
-      {
-        "id": 2,
-        "status": "pending",
-        "total": "570.00",
-        "items": [...]
-      }
-    ],
-    "total": 1
+  "data": [
+    {
+      "id": 2,
+      "status": "pending",
+      "total": "570.00",
+      "items": [...]
+    }
+  ]
   }
 }
 ```
@@ -340,17 +337,17 @@ All API responses follow this structure:
 }
 ```
 
-**Paginated:**
+**List Response (e.g. /api/orders):**
 ```json
 {
   "success": true,
   "message": "Data retrieved",
-  "data": {
-    "current_page": 1,
-    "data": [...],
-    "total": 10,
-    "per_page": 10,
-    "last_page": 1
-  }
+  "data": [
+    {
+      "id": 1,
+      "status": "pending",
+      "items": [...]
+    }
+  ]
 }
 ```

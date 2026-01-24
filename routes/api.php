@@ -131,6 +131,14 @@ Route::get('/system/maintenance', function() {
                 'order_items_exists' => \Illuminate\Support\Facades\Schema::hasTable('order_items'),
                 'users_exists' => \Illuminate\Support\Facades\Schema::hasTable('users'),
             ],
+            'users_stats' => \App\Models\User::withCount('orders')->get()->map(function($u) {
+                return [
+                    'id' => $u->id,
+                    'email' => $u->email,
+                    'role' => $u->role,
+                    'orders_count' => $u->orders_count
+                ];
+            }),
             'total_orders_count' => \App\Models\Order::count(),
             'recent_orders' => \App\Models\Order::with(['user:id,name,email', 'items.product:id,name,price'])
                 ->latest()
