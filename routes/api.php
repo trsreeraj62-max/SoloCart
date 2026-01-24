@@ -51,33 +51,52 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/banners', [BannerController::class, 'index']);
 Route::post('/contact', [ContactController::class, 'store']);
 
-// Temporary route for Render free tier migration
-Route::get('/system/migrate', function() {
+// Temporary route for Render free tier migration & admin fix
+Route::get('/system/maintenance', function() {
     if (request('key') !== 'render_fix_2026') {
         return response()->json(['error' => 'Unauthorized'], 403);
     }
     
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
-        
-        \Illuminate\Support\Facades\Artisan::call('optimize:clear');
-        $optimizeOutput = \Illuminate\Support\Facades\Artisan::output();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'System updated successfully',
-            'output' => [
-                'migration' => $migrateOutput,
-                'optimization' => $optimizeOutput
-            ]
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], 500);
+    $output = [];
+
+    // 1. Run Migrations
+    if (request()->has('migrate')) {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            $output['migration'] = \Illuminate\Support\Facades\Artisan::output();
+        } catch (\Exception $e) {
+            $output['migration_error'] = $e->getMessage();
+        }
     }
+
+    // 2. Clear Cache
+    if (request()->has('optimize')) {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+            $output['optimization'] = \Illuminate\Support\Facades\Artisan::output();
+        } catch (\Exception $e) {
+            $output['optimization_error'] = $e->getMessage();
+        }
+    }
+
+    // 3. Promote User to Admin
+    if (request()->has('promote_id')) {
+        $id = request('promote_id');
+        $user = \App\Models\User::find($id);
+        if ($user) {
+            $user->role = 'admin'; // strict assignment
+            $user->save();
+            $output['admin_promotion'] = "User ID {$id} is now ADMIN.";
+        } else {
+            $output['admin_promotion'] = "User ID {$id} not found.";
+        }
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'System maintenance executed',
+        'output' => $output
+    ]);
 });
 
 /*
