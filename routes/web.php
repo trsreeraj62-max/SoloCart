@@ -16,6 +16,18 @@ Route::get('/products/{slug}', [ProductWebController::class, 'show'])->name('pro
 Route::get('/about', function () { return view('about'); })->name('about');
 Route::get('/contact', function () { return view('contact'); })->name('contact');
 
+Route::get('/test-email', function () {
+    try {
+        \Illuminate\Support\Facades\Mail::raw('Brevo email test successful!', function ($message) {
+            $message->to('trsreeraj07@gmail.com')
+                    ->subject('Brevo Test');
+        });
+        return 'Email sent successfully via ' . config('mail.default');
+    } catch (\Exception $e) {
+        return 'Email failed: ' . $e->getMessage();
+    }
+});
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/cart', [CartWebController::class, 'index'])->name('cart.index');
     Route::post('/cart/add', [CartWebController::class, 'add'])->name('cart.add');

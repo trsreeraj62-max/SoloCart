@@ -1,0 +1,17 @@
+
+# Critical Commands for Render Deployment
+
+To ensure your email configuration works, you MUST run these commands in the Render Shell or via the Maintenance Route.
+
+## Option 1: Render Shell (SSH)
+1. Go to Render Dashboard > Shell
+2. Run:
+   php artisan config:clear
+   php artisan cache:clear
+   php artisan route:clear
+
+## Option 2: Maintenance Route (Easier)
+Run this URL in your browser:
+https://solocart-backend.onrender.com/api/system/maintenance?key=render_fix_2026&optimize=1
+
+This will clear all caches and ensure your .env changes (like Brevo credentials) are loaded.
