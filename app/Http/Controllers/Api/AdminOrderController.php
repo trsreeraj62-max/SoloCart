@@ -45,10 +45,10 @@ class AdminOrderController extends ApiController
                 });
             }
 
-            $orders = $query->paginate(20);
+            $orders = $query->get();
             
             // Transform data to include calculated fields
-            $orders->getCollection()->transform(function ($order) {
+            $orders->transform(function ($order) {
                 $order->buyer_name = $order->user->name ?? 'N/A';
                 $order->buyer_email = $order->user->email ?? 'N/A';
                 
@@ -64,8 +64,7 @@ class AdminOrderController extends ApiController
             });
             
             Log::info('Admin orders retrieved', [
-                'total' => $orders->total(),
-                'page' => $orders->currentPage()
+                'count' => $orders->count()
             ]);
             
             return $this->success($orders, "Admin orders retrieved");
