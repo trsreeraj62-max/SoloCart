@@ -27,6 +27,35 @@ use App\Http\Controllers\Api\{
 |--------------------------------------------------------------------------
 */
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
+Route::get('/test-email', function() {
+    try {
+        $to = request('email', 'trsreeraj07@gmail.com');
+        \Illuminate\Support\Facades\Mail::raw('SoloCart API Email Test Details: ' . now(), function ($message) use ($to) {
+            $message->to($to)
+                    ->subject('SoloCart API Connectivity Test');
+        });
+        return response()->json([
+            'success' => true,
+            'message' => "Email sent successfully to {$to}",
+            'driver' => config('mail.default'),
+            'host' => config('mail.mailers.smtp.host'),
+            'port' => config('mail.mailers.smtp.port'),
+            'encryption' => config('mail.mailers.smtp.encryption'),
+            'username_set' => !empty(config('mail.mailers.smtp.username'))
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Email failed to send',
+            'error' => $e->getMessage(),
+            'config' => [
+                'driver' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host'),
+                'port' => config('mail.mailers.smtp.port'),
+            ]
+        ], 500);
+    }
+});
 
 Route::get('/home-data', function() {
     $products = \App\Models\Product::with(['category', 'images'])->active()->get();
