@@ -126,27 +126,27 @@ class OrderController extends ApiController
      */
     public function index(Request $request)
     {
-        // DEBUG: Temporary check as requested
-        dd([
-          'auth_id' => auth()->id(),
-          'request_user_id' => $request->user()->id, // Added this one too just in case
-          'orders_in_db' => \App\Models\Order::count(),
-          'my_orders' => \App\Models\Order::where('user_id', auth()->id())->count(),
-        ]);
-
         try {
             $userId = $request->user()->id;
-            \Illuminate\Support\Facades\Log::info('Fetching orders for user', ['user_id' => $userId]);
+            $userRole = $request->user()->role;
+            
+            // Debugging log
+            \Illuminate\Support\Facades\Log::info('Order Debug', [
+                'auth_id' => $userId, 
+                'role' => $userRole,
+                'total_orders_in_db' => \App\Models\Order::count(),
+                'user_orders_count' => \App\Models\Order::where('user_id', $userId)->count()
+            ]);
 
             // Explicitly use request user ID to filter orders
-            $orders = Order::where('user_id', $userId)
-                ->with('items.product')
+            $orders = Order::with('items.product')
+                ->where('user_id', $userId)
                 ->latest()
                 ->get();
             
-            \Illuminate\Support\Facades\Log::info('Orders count result', ['count' => $orders->count()]);
+            $msg = "Orders retrieved. Found: " . $orders->count() . " for User ID: " . $userId;
             
-            return $this->success($orders, "Orders retrieved successfully");
+            return $this->success($orders, $msg);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Get Orders Error: ' . $e->getMessage());
             return $this->error("Failed to retrieve orders", 500);
