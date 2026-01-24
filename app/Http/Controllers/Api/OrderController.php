@@ -156,9 +156,11 @@ class OrderController extends ApiController
     /**
      * Get order details
      */
-    public function show($id, Request $request)
+    public function show(Request $request, $id)
     {
-        $order = Order::with('items.product')->where('user_id', $request->user()->id)->find($id);
+        $order = Order::with(['items.product', 'user'])
+            ->where('user_id', $request->user()->id)
+            ->find($id);
         
         if (!$order) {
             return $this->error("Order not found", 404);
