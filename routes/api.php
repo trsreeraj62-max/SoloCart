@@ -17,7 +17,8 @@ use App\Http\Controllers\Api\{
     AdminCategoryController,
     AdminDiscountController,
     AdminContactController,
-    AdminOrderController
+    AdminOrderController,
+    ProfileController
 };
 
 /*
@@ -129,12 +130,11 @@ Route::post('/otp/resend', [AuthController::class, 'resendOtp']);
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/user', [AuthController::class, 'user']);
-    Route::get('/profile', [AuthController::class, 'user']); // Alias for better semantics
+    Route::get('/profile', [ProfileController::class, 'show']); 
     Route::post('/logout', [AuthController::class, 'logout']);
     
     // Profile
-    Route::post('/profile/update', [AuthController::class, 'updateProfile']);
-    Route::post('/profile/photo', [AuthController::class, 'uploadProfilePhoto']);
+    Route::post('/profile/update', [ProfileController::class, 'update']);
 
     // Cart
     Route::get('/cart', [CartController::class, 'index']);
