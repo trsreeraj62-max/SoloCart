@@ -113,11 +113,10 @@ class OrderController extends ApiController
     public function index()
     {
         try {
-            $orders = Auth::user()->orders()->with('items.product')->latest()->paginate(10);
+            $orders = Auth::user()->orders()->with('items.product')->latest()->get();
             
             \Illuminate\Support\Facades\Log::info('User orders retrieved:', [
                 'user_id' => Auth::id(),
-                'total' => $orders->total(),
                 'count' => $orders->count()
             ]);
             

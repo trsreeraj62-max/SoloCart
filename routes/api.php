@@ -117,20 +117,36 @@ Route::get('/system/maintenance', function() {
 
     // 5. Debug: Check if orders exist
     if (request()->has('debug_orders')) {
-        $totalOrders = \App\Models\Order::count();
-        $recentOrders = \App\Models\Order::with(['user:id,name,email', 'items.product:id,name,price'])
-            ->latest()
-            ->take(10)
-            ->get();
+        $connection = \Illuminate\Support\Facades\DB::connection();
         
         $output['debug_orders'] = [
-            'total_orders_in_db' => $totalOrders,
-            'recent_orders' => $recentOrders,
-            'order_items_count' => \App\Models\OrderItem::count(),
-            'database_info' => [
-                'orders_table_exists' => \Illuminate\Support\Facades\Schema::hasTable('orders'),
-                'order_items_table_exists' => \Illuminate\Support\Facades\Schema::hasTable('order_items'),
-            ]
+            'database_connection' => [
+                'name' => $connection->getName(),
+                'driver' => $connection->getDriverName(),
+                'host' => $connection->getConfig('host'),
+                'database' => $connection->getDatabaseName(),
+            ],
+            'table_status' => [
+                'orders_exists' => \Illuminate\Support\Facades\Schema::hasTable('orders'),
+                'order_items_exists' => \Illuminate\Support\Facades\Schema::hasTable('order_items'),
+                'users_exists' => \Illuminate\Support\Facades\Schema::hasTable('users'),
+            ],
+            'total_orders_count' => \App\Models\Order::count(),
+            'recent_orders' => \App\Models\Order::with(['user:id,name,email', 'items.product:id,name,price'])
+                ->latest()
+                ->take(5)
+                ->get()
+                ->map(function($order) {
+                    return [
+                        'id' => $order->id,
+                        'user_id' => $order->user_id,
+                        'user_email' => $order->user ? $order->user->email : 'N/A',
+                        'total' => $order->total,
+                        'status' => $order->status,
+                        'created_at' => $order->created_at->toDateTimeString(),
+                        'items_count' => $order->items->count(),
+                    ];
+                }),
         ];
     }
 
