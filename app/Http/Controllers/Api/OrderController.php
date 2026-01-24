@@ -22,10 +22,13 @@ class OrderController extends ApiController
      */
     public function store(Request $request)
     {
-        \Illuminate\Support\Facades\Log::info('Order Creation Request:', $request->all());
-
-        $user = $request->user(); // Explicitly get Sanctum user
+        $user = $request->user(); 
         
+        \Illuminate\Support\Facades\Log::info('Order Creation Started', [
+            'request_user_id' => $user ? $user->id : 'null', 
+            'request_data' => $request->all()
+        ]);
+
         if (!$user) {
             return $this->error('Unauthorized', 401);
         }
@@ -86,7 +89,10 @@ class OrderController extends ApiController
                 }
             }
 
-            \Illuminate\Support\Facades\Log::info('Creating order with items:', $itemsData);
+            \Illuminate\Support\Facades\Log::info('Passing to OrderService', [
+                'user_id' => $user->id, 
+                'items_count' => count($itemsData)
+            ]);
 
             // Pass user explicitly
             $order = $this->orderService->createOrder($user, [
@@ -95,6 +101,12 @@ class OrderController extends ApiController
                 'payment_method' => $request->payment_method,
                 'clear_cart' => $clearCart
             ], $itemsData);
+
+            \Illuminate\Support\Facades\Log::info('Order Created Result', [
+                'order_id' => $order->id,
+                'order_user_id' => $order->user_id,
+                'current_user_id' => $user->id
+            ]);
 
             // Reload order with relationships
             $order->load(['items.product', 'user']);
@@ -115,11 +127,16 @@ class OrderController extends ApiController
     public function index(Request $request)
     {
         try {
+            $userId = $request->user()->id;
+            \Illuminate\Support\Facades\Log::info('Fetching orders for user', ['user_id' => $userId]);
+
             // Explicitly use request user ID to filter orders
-            $orders = Order::where('user_id', $request->user()->id)
+            $orders = Order::where('user_id', $userId)
                 ->with('items.product')
                 ->latest()
                 ->get();
+            
+            \Illuminate\Support\Facades\Log::info('Orders count result', ['count' => $orders->count()]);
             
             return $this->success($orders, "Orders retrieved successfully");
         } catch (\Exception $e) {
@@ -131,10 +148,9 @@ class OrderController extends ApiController
     /**
      * Get order details
      */
-    public function show($id)
+    public function show($id, Request $request)
     {
-        // Explicitly check user_id matching Auth user
-        $order = Order::with('items.product')->where('user_id', \Auth::id())->find($id);
+        $order = Order::with('items.product')->where('user_id', $request->user()->id)->find($id);
         
         if (!$order) {
             return $this->error("Order not found", 404);

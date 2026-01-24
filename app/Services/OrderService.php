@@ -47,6 +47,7 @@ class OrderService
             $fees = $this->calculateFees($data['subtotal']);
             
             Log::info('OrderService: Fees calculated', $fees);
+            Log::info('OrderService: Creating order for user', ['user_id' => $user->id, 'email' => $user->email]);
             
             $order = Order::create([
                 'user_id' => $user->id,
@@ -57,7 +58,10 @@ class OrderService
                 'payment_status' => 'unpaid',
             ]);
 
-            Log::info('OrderService: Order created', ['order_id' => $order->id]);
+            Log::info('OrderService: Order created', [
+                'order_id' => $order->id, 
+                'user_id_in_db' => $order->user_id
+            ]);
 
             foreach ($items as $item) {
                 OrderItem::create([
