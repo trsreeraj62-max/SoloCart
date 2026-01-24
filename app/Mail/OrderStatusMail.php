@@ -53,6 +53,18 @@ class OrderStatusMail extends Mailable
      */
     public function attachments(): array
     {
+        if ($this->status === Order::STATUS_DELIVERED) {
+            try {
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', ['order' => $this->order]);
+                return [
+                    \Illuminate\Mail\Mailables\Attachment::fromData(fn () => $pdf->output(), 'invoice.pdf')
+                        ->withMime('application/pdf'),
+                ];
+            } catch (\Exception $e) {
+                // If PDF fails, send email without attachment
+                \Illuminate\Support\Facades\Log::error('PDF generation error in mail: ' . $e->getMessage());
+            }
+        }
         return [];
     }
 }

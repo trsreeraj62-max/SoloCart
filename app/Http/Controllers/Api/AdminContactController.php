@@ -27,34 +27,58 @@ class AdminContactController extends ApiController
     }
 
     /**
+     * Get single contact message details
+     */
+    public function show($id)
+    {
+        $message = ContactMessage::find($id);
+
+        if (!$message) {
+            return $this->error("Contact message not found", 404);
+        }
+
+        return $this->success($message, "Contact message details");
+    }
+
+    /**
      * Reply to a contact message
      */
     public function reply(Request $request, $id)
     {
-        $request->validate([
-            'reply' => 'required|string|min:5'
-        ]);
-
-        $message = ContactMessage::find($id);
-        if (!$message) {
-            return $this->error("Message not found", 404);
-        }
-
-        // Update DB
-        $message->admin_reply = $request->reply;
-        $message->status = 'replied';
-        $message->save();
-
-        // Send Email
         try {
-            Mail::to($message->email)->send(new AdminReplyMail($message, $request->reply));
-            return $this->success($message, "Reply sent and saved successfully");
+            $request->validate([
+                'reply' => 'required|string|min:5'
+            ]);
+
+            $message = ContactMessage::find($id);
+            if (!$message) {
+                return $this->error("Message not found", 404);
+            }
+
+            // Update DB
+            $message->admin_reply = $request->reply;
+            $message->status = 'replied';
+            $message->save();
+
+            // Send Email Safely
+            try {
+                Mail::to($message->email)->send(new AdminReplyMail($message, $request->reply));
+                $emailSent = true;
+            } catch (\Exception $e) {
+                // Log mail error but don't fail the request
+                \Illuminate\Support\Facades\Log::error("Mail send failed for ID $id: " . $e->getMessage());
+                $emailSent = false;
+            }
+
+            return $this->success([
+                'message' => $message,
+                'email_sent' => $emailSent
+            ], "Reply saved" . ($emailSent ? " and email sent." : " but email failed to send."));
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+             return $this->error("Validation failed", 422, $e->errors());
         } catch (\Exception $e) {
-            // Even if mail fails, we saved the reply. Should we rollback?
-            // Usually valid to keep it as replied but warn. 
-            // For now, let's treat it as success but maybe log error.
-            \Illuminate\Support\Facades\Log::error("Mail send failed: " . $e->getMessage());
-            return $this->success($message, "Reply saved but email sending failed. Check logs.");
+            return $this->error("An error occurred while replying", 500);
         }
     }
 }

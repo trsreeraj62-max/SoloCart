@@ -18,6 +18,43 @@ class CheckoutController extends ApiController
     }
 
     /**
+     * Preview checkout (calculate totals)
+     */
+    public function preview(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+        ]);
+
+        $subtotal = 0;
+        $itemsResponse = [];
+
+        foreach ($request->items as $item) {
+            $product = Product::find($item['product_id']);
+            $price = $product->price - ($product->price * ($product->discount_percent / 100));
+            $lineTotal = $price * $item['quantity'];
+            
+            $subtotal += $lineTotal;
+            
+            $itemsResponse[] = [
+                'product' => $product, // Includes name, images, etc.
+                'quantity' => $item['quantity'],
+                'price' => $price,
+                'total' => $lineTotal
+            ];
+        }
+
+        $fees = $this->orderService->calculateFees($subtotal);
+
+        return $this->success([
+            'items' => $itemsResponse,
+            'summary' => $fees
+        ], "Checkout preview calculated");
+    }
+
+    /**
      * Checkout from a single product (Buy Now)
      */
     public function singleProductCheckout(Request $request)

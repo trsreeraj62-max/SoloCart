@@ -16,7 +16,8 @@ use App\Http\Controllers\Api\{
     AdminProductController,
     AdminCategoryController,
     AdminDiscountController,
-    AdminContactController
+    AdminContactController,
+    AdminOrderController
 };
 
 /*
@@ -85,11 +86,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cart/clear', [CartController::class, 'clear']);
 
     // Checkout
+    Route::post('/checkout/preview', [CheckoutController::class, 'preview']);
     Route::post('/checkout/single', [CheckoutController::class, 'singleProductCheckout']);
     Route::post('/checkout/cart', [CheckoutController::class, 'cartCheckout']);
 
     // Orders
     Route::get('/orders', [OrderController::class, 'index']);
+    Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel']);
     Route::post('/orders/{id}/return', [OrderController::class, 'returnOrder']);
@@ -110,8 +113,9 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/analytics', [AdminAnalyticsController::class, 'index']);
     
     // Orders Management
-    Route::get('/orders', [OrderController::class, 'adminIndex']);
-    Route::post('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+    // Orders Management
+    Route::get('/orders', [AdminOrderController::class, 'index']);
+    Route::post('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
     
     // Users Management
     Route::get('/users', [AdminUserController::class, 'index']);
@@ -145,6 +149,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('/discounts/remove', [AdminDiscountController::class, 'removeDiscount']);
 
     // Contact Messages
-    Route::get('/contact-messages', [AdminContactController::class, 'index']);
-    Route::post('/contact-messages/{id}/reply', [AdminContactController::class, 'reply']);
+    // Contact Messages
+    Route::get('/contacts', [AdminContactController::class, 'index']);
+    Route::get('/contacts/{id}', [AdminContactController::class, 'show']);
+    Route::post('/contacts/{id}/reply', [AdminContactController::class, 'reply']);
 });

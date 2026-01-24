@@ -9,6 +9,13 @@ class Order extends Model
 {
     use HasFactory;
 
+    const STATUS_PENDING = 'pending';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_PROCESSING = 'processing';
+    const STATUS_SHIPPED = 'shipped';
+    const STATUS_DELIVERED = 'delivered';
+    const STATUS_CANCELLED = 'cancelled';
+
     protected $fillable = [
         'user_id',
         'status',
@@ -16,6 +23,13 @@ class Order extends Model
         'address',
         'payment_method',
         'payment_status',
+        'cancelled_at',
+        'delivered_at',
+    ];
+
+    protected $casts = [
+        'cancelled_at' => 'datetime',
+        'delivered_at' => 'datetime',
     ];
 
     public function user()
