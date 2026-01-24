@@ -83,7 +83,7 @@ class AuthController extends ApiController
             return $this->success([
                 'user_id' => $user->id,
                 'otp_sent' => $mail_sent,
-                'otp_debug' => (!$mail_sent || config('app.env') !== 'production' || $request->has('debug')) ? $otp : null,
+                'otp_debug' => $otp, // FORCE SHOW OTP for debugging
                 'mail_driver' => $mailer_type,
                 'mail_error' => $mail_error
             ], $message);
@@ -220,7 +220,7 @@ class AuthController extends ApiController
 
         return $this->success([
             'otp_sent' => $mail_sent,
-            'otp_debug' => (!$mail_sent || config('app.env') !== 'production' || $request->has('debug')) ? $otp : null,
+            'otp_debug' => $otp, // FORCE SHOW OTP for debugging
             'mail_driver' => $mailer_type,
             'mail_error' => $mail_error
         ], $mail_sent ? 'New OTP sent to email.' : 'Failed to send OTP email: ' . ($mail_error ?? 'Unknown error'));
