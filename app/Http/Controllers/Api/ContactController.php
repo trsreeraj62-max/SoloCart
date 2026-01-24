@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\ApiController;
-use App\Models\ContactMessage;
+use App\Models\Contact;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -35,7 +35,7 @@ class ContactController extends ApiController
             }
             $data['status'] = 'new'; // Explicit default
 
-            $contact = ContactMessage::create($data);
+            $contact = Contact::create($data);
 
             return $this->success($contact, "Message received. We will contact you soon.", 201);
 

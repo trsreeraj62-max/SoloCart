@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\ContactMessage;
+use App\Models\Contact;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\AdminReplyMail;
@@ -19,7 +19,7 @@ class AdminContactController extends ApiController
         // Let's just do latest() for now, or custom sort.
         // If I want 'new' first, I can orderByRaw("CASE WHEN status = 'new' THEN 1 ELSE 2 END").
         
-        $messages = ContactMessage::orderByRaw("CASE WHEN status = 'new' THEN 1 ELSE 2 END")
+        $messages = Contact::orderByRaw("CASE WHEN status = 'new' THEN 1 ELSE 2 END")
             ->latest()
             ->paginate(20);
             
@@ -31,7 +31,7 @@ class AdminContactController extends ApiController
      */
     public function show($id)
     {
-        $message = ContactMessage::find($id);
+        $message = Contact::find($id);
 
         if (!$message) {
             return $this->error("Contact message not found", 404);
@@ -50,7 +50,7 @@ class AdminContactController extends ApiController
                 'reply' => 'required|string|min:5'
             ]);
 
-            $message = ContactMessage::find($id);
+            $message = Contact::find($id);
             if (!$message) {
                 return $this->error("Message not found", 404);
             }

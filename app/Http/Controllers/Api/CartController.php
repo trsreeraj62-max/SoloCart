@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 class CartController extends ApiController
 {
     /**
-     * Get user cart
+     * Get user cart with calculated totals
      */
     public function index()
     {
@@ -20,10 +20,64 @@ class CartController extends ApiController
             $cart = $user->cart()->with('items.product.images')->first();
             
             if (!$cart) {
-                $cart = $user->cart()->create();
+                // Return empty structure if no cart
+                return $this->success([
+                    'items' => [],
+                    'summary' => [
+                        'subtotal' => 0,
+                        'tax' => 0,
+                        'shipping' => 0,
+                        'total' => 0
+                    ]
+                ], "Cart retrieved");
             }
 
-            return $this->success($cart, "Cart retrieved");
+            $subtotal = 0;
+            $cartItems = [];
+
+            foreach ($cart->items as $item) {
+                if (!$item->product) continue;
+
+                $product = $item->product;
+                // Price calculation with discount
+                $finalPrice = $product->price - ($product->price * ($product->discount_percent / 100));
+                
+                $lineTotal = $finalPrice * $item->quantity;
+                $subtotal += $lineTotal;
+
+                $cartItems[] = [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'name' => $product->name,
+                    'image' => $product->image_url, // Assuming accessor exists
+                    'price' => round($finalPrice, 2),
+                    'original_price' => $product->price,
+                    'discount_percent' => $product->discount_percent,
+                    'quantity' => $item->quantity,
+                    'line_total' => round($lineTotal, 2)
+                ];
+            }
+
+            // Calculation Rules
+            $tax = $subtotal * 0.18;
+            $shipping = $subtotal > 500 ? 0 : 50;
+            // Free shipping if subtotal is 0? Generally yes, but logic says >500 is free, <=500 is 50. 
+            // If subtotal is 0 (empty cart items found?), shipping should be 0.
+            if ($subtotal == 0) $shipping = 0;
+
+            $total = $subtotal + $tax + $shipping;
+
+            $response = [
+                'items' => $cartItems,
+                'summary' => [
+                    'subtotal' => round($subtotal, 2),
+                    'tax' => round($tax, 2),
+                    'shipping' => $shipping,
+                    'total' => round($total, 2)
+                ]
+            ];
+
+            return $this->success($response, "Cart retrieved");
         } catch (\Exception $e) {
             return $this->error("Failed to retrieve cart: " . $e->getMessage());
         }
@@ -63,7 +117,7 @@ class CartController extends ApiController
                 ]);
             }
 
-            return $this->success($cart->load('items.product.images'), "Item added to cart");
+            return $this->success([], "Item added to cart");
         } catch (\Exception $e) {
             return $this->error("Failed to add item: " . $e->getMessage());
         }
@@ -89,12 +143,12 @@ class CartController extends ApiController
             $cart = Auth::user()->cart;
             if (!$cart) return $this->error("Cart not found", 404);
 
-            $item = $cart->items()->where('product_id', $request->product_id)->first();
+            $item = $cart->items()->where('product_id', $productId)->first();
             if (!$item) return $this->error("Item not in cart", 404);
 
             $item->update(['quantity' => $request->quantity]);
 
-            return $this->success($cart->load('items.product.images'), "Cart updated");
+            return $this->success([], "Cart updated");
         } catch (\Exception $e) {
             return $this->error("Update failed: " . $e->getMessage());
         }
