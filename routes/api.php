@@ -44,10 +44,17 @@ Route::get('/test-email', function() {
             'username_set' => !empty(config('mail.mailers.smtp.username'))
         ]);
     } catch (\Exception $e) {
+        $error = $e->getMessage();
+        $tip = null;
+        if (str_contains($error, 'timed out')) {
+            $tip = "Timeout detected. Try changing MAIL_PORT to 2525 in Render Environment Variables. This often bypasses firewall blocks.";
+        }
+        
         return response()->json([
             'success' => false,
             'message' => 'Email failed to send',
-            'error' => $e->getMessage(),
+            'error' => $error,
+            'tip' => $tip,
             'config' => [
                 'driver' => config('mail.default'),
                 'host' => config('mail.mailers.smtp.host'),
