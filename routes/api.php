@@ -105,6 +105,30 @@ Route::get('/system/maintenance', function() {
         }
     }
 
+    // 4. Create Storage Symlink (for local uploads)
+    if (request()->has('link_storage')) {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('storage:link');
+            $output['storage_link'] = 'Symlink created successfully';
+        } catch (\Exception $e) {
+            $output['storage_link_error'] = $e->getMessage();
+        }
+    }
+
+    // 5. Debug: Check if orders exist
+    if (request()->has('debug_orders')) {
+        $totalOrders = \App\Models\Order::count();
+        $recentOrders = \App\Models\Order::with('user:id,name,email')
+            ->latest()
+            ->take(5)
+            ->get(['id', 'user_id', 'total', 'status', 'created_at']);
+        
+        $output['debug_orders'] = [
+            'total_orders_in_db' => $totalOrders,
+            'recent_5_orders' => $recentOrders
+        ];
+    }
+
     return response()->json([
         'success' => true,
         'message' => 'System maintenance executed',
