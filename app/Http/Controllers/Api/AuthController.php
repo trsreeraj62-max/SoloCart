@@ -12,7 +12,7 @@ use App\Services\BrevoMailService;
 
 class AuthController extends ApiController
 {
-    public function register(Request $request, \App\Services\BrevoService $brevoService)
+    public function register(Request $request)
     {
         try {
             // 1. Sanitize & Validate
@@ -43,7 +43,6 @@ class AuthController extends ApiController
                     'name' => $request->name,
                     'password' => Hash::make($request->password),
                     'phone' => $request->phone,
-                    'role' => 'user', 
                 ]);
             } else {
                 // Create New
@@ -59,14 +58,16 @@ class AuthController extends ApiController
             // 3. Generate & Securely Store OTP
             $otp = rand(100000, 999999);
             // Single source of truth: Cache. Expires in 10 mins.
-            Cache::put('otp_' . $user->id, $otp, 600);
+            Cache::put('otp_' . $user->email, $otp, 600); // Changed to email key to match verifyOtp refactor
 
             // 4. Send Email via Brevo HTTP API
-            $mailSent = $brevoService->sendOtp($user->email, $otp, $user->name);
-
-            if (!$mailSent) {
+            try {
+                // Use Static Service
+                BrevoMailService::sendOtp($user->email, $otp);
+            } catch (\Exception $e) {
                 \Illuminate\Support\Facades\DB::rollBack();
-                // Production Error: Generic message, no technical details
+                \Illuminate\Support\Facades\Log::error("Brevo Mail Failed: " . $e->getMessage());
+                // Production Error
                 return $this->error('Failed to send verification email. Please try again later.', 503);
             }
 
