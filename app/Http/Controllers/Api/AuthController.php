@@ -166,16 +166,25 @@ class AuthController extends ApiController
 
     public function verifyOtp(Request $request)
     {
+        // Allow email instead of user_id since frontend state might be lost
         $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'required_without:email|exists:users,id',
+            'email' => 'required_without:user_id|exists:users,email',
             'otp' => 'required'
         ]);
 
-        $cachedOtp = Cache::get('otp_' . $request->user_id);
+        if ($request->filled('user_id')) {
+            $user = User::find($request->user_id);
+        } else {
+            $user = User::where('email', strtolower($request->email))->first();
+        }
+
+        $cachedOtp = Cache::get('otp_' . $user->id);
 
         if ($cachedOtp && $cachedOtp == $request->otp) {
-            $user = User::find($request->user_id);
-            Cache::forget('otp_' . $request->user_id);
+            // $user is already found above
+            Cache::forget('otp_' . $user->id); // Clear OTP verify
+
             
             $token = $user->createToken('auth_token')->plainTextToken;
             $user->update(['last_login_at' => now(), 'email_verified_at' => now()]);
