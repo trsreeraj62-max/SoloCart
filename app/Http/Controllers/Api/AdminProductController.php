@@ -55,15 +55,34 @@ class AdminProductController extends ApiController
                 'category_id' => 'required|exists:categories,id',
                 'image' => 'nullable|image|max:5048', // 5MB max
                 'specifications' => 'nullable|string',
-                'is_active' => 'boolean'
+                'is_active' => 'boolean',
+                'discount_percent' => 'nullable|integer|min:0|max:100',
+                'discount_start_date' => 'nullable|date',
+                'discount_end_date' => 'nullable|date|after_or_equal:discount_start_date',
             ]);
 
             // Create Product
-            $productData = $request->only(['name', 'description', 'price', 'stock', 'category_id', 'specifications']);
+            $productData = $request->only([
+                'name', 
+                'description', 
+                'price', 
+                'stock', 
+                'category_id', 
+                'specifications',
+                'discount_percent',
+                'discount_start_date',
+                'discount_end_date'
+            ]);
+            
             $productData['slug'] = \Illuminate\Support\Str::slug($request->name) . '-' . uniqid();
             
             // Default to true if not provided (though DB defaults to true)
             $productData['is_active'] = $request->has('is_active') ? $request->is_active : true;
+            
+            // Handle null discount_percent by defaulting to 0 if not present
+            if (!isset($productData['discount_percent'])) {
+                $productData['discount_percent'] = 0;
+            }
             
             $product = Product::create($productData);
 
@@ -127,7 +146,10 @@ class AdminProductController extends ApiController
                 'price' => 'numeric|min:0',
                 'stock' => 'integer|min:0',
                 'category_id' => 'exists:categories,id',
-                'is_active' => 'boolean'
+                'is_active' => 'boolean',
+                'discount_percent' => 'nullable|integer|min:0|max:100',
+                'discount_start_date' => 'nullable|date',
+                'discount_end_date' => 'nullable|date|after_or_equal:discount_start_date',
             ];
 
             if ($request->hasFile('image')) {
@@ -138,7 +160,14 @@ class AdminProductController extends ApiController
 
             $request->validate($rules);
 
-            $product->update($request->except(['image', 'slug'])); // Keep slug stable usually
+            $data = $request->except(['image', 'slug']);
+            
+            // Ensure discount_percent is never null (DB column is not nullable)
+            if (array_key_exists('discount_percent', $data) && is_null($data['discount_percent'])) {
+                $data['discount_percent'] = 0;
+            }
+
+            $product->update($data);
 
             // Handle Image Update
             if ($request->hasFile('image')) {
