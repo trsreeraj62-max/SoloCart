@@ -11,39 +11,41 @@ use Carbon\Carbon;
 
 class AuthController extends ApiController
 {
-    public function register(Request $request)
+    public function register(Request $request, \App\Services\BrevoService $brevoService)
     {
         try {
-            // Normalize email to lowercase
+            // 1. Sanitize & Validate
             $request->merge(['email' => strtolower($request->email)]);
-
+            
             $request->validate([
-                'name' => 'required|string',
-                'email' => 'required|email',
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
                 'password' => 'required|min:6',
-                'phone' => 'required',
+                'phone' => 'required|string|max:20',
             ]);
 
+            // 2. Atomic Transaction
             \Illuminate\Support\Facades\DB::beginTransaction();
 
             $user = User::where('email', $request->email)->first();
 
             if ($user && $user->email_verified_at) {
-                // Return 422 with exact format expected by frontend validation errors
-                throw \Illuminate\Validation\ValidationException::withMessages(['email' => 'The email has already been taken.']);
+                // Production: standard error response
+                 throw \Illuminate\Validation\ValidationException::withMessages([
+                    'email' => 'The email has already been taken.'
+                ]);
             }
 
             if ($user) {
-                // User exists but is UNVERIFIED -> Update info
+                // Existing unverified user -> Update
                 $user->update([
                     'name' => $request->name,
                     'password' => Hash::make($request->password),
                     'phone' => $request->phone,
                     'role' => 'user', 
                 ]);
-                \Illuminate\Support\Facades\Log::info("Existing unverified user re-registering: {$user->email}");
             } else {
-                // New User
+                // Create New
                 $user = User::create([
                     'name' => $request->name,
                     'email' => $request->email,
@@ -51,61 +53,37 @@ class AuthController extends ApiController
                     'phone' => $request->phone,
                     'role' => 'user',
                 ]);
-                \Illuminate\Support\Facades\Log::info("New user registered: {$user->email}");
             }
 
-            // Send OTP
+            // 3. Generate & Securely Store OTP
             $otp = rand(100000, 999999);
-            Cache::put('otp_' . $user->id, $otp, 600); // 10 minutes
-            $mail_sent = false;
-            $mail_error = null;
-            $mailer_type = config('mail.default');
+            // Single source of truth: Cache. Expires in 10 mins.
+            Cache::put('otp_' . $user->id, $otp, 600);
 
-            \Illuminate\Support\Facades\Log::info("Attempting to send OTP to {$user->email} using mailer: {$mailer_type}");
+            // 4. Send Email via Brevo HTTP API
+            $mailSent = $brevoService->sendOtp($user->email, $otp, $user->name);
 
-            try {
-                if ($mailer_type !== 'log') {
-                    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
-                    $mail_sent = true;
-                    \Illuminate\Support\Facades\Log::info("OTP Email sent successfully to {$user->email}");
-                } else {
-                    $mail_error = "Server is in 'LOG' mode. No real email sent.";
-                    \Illuminate\Support\Facades\Log::warning($mail_error);
-                }
-            } catch (\Exception $e) {
-                $mail_error = $e->getMessage();
-                \Illuminate\Support\Facades\Log::error('OTP Mail Error for ' . $user->email . ': ' . $mail_error);
-            }
-            
-            $message = $mail_sent ? 'User registered. Please verify OTP sent to email.' : 'User registered but OTP mail failed.';
-            if (!$mail_sent) {
-                // STRICT MODE: Fail if email fails
-                // ROLLBACK USER CREATION
+            if (!$mailSent) {
                 \Illuminate\Support\Facades\DB::rollBack();
-                
-                return $this->error($mail_error ?? 'OTP email failed to send', 500, [
-                    'mail_driver' => $mailer_type,
-                    'is_log_mode' => $mailer_type === 'log',
-                    'debug_otp' => $otp // Still providing OTP for developer rescue in non-prod
-                ]);
+                // Production Error: Generic message, no technical details
+                return $this->error('Failed to send verification email. Please try again later.', 503);
             }
 
             \Illuminate\Support\Facades\DB::commit();
 
+            // 5. Clean Response
             return $this->success([
                 'user_id' => $user->id,
-                'otp_sent' => true,
-                'debug_otp' => $otp, // Temporarily exposed for testing
-                'mail_driver' => $mailer_type
-            ], 'User registered. Please verify OTP sent to email.');
+                'email' => $user->email
+            ], 'User registered. Please check your email for the OTP.');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Illuminate\Support\Facades\DB::rollBack();
-            return $this->error("Validation failed", 422, $e->errors());
+            return $this->error('Validation failed', 422, $e->errors());
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
-            \Illuminate\Support\Facades\Log::error('Register Error: ' . $e->getMessage());
-            return $this->error("Registration failed: " . $e->getMessage(), 500);
+            \Illuminate\Support\Facades\Log::error('Registration System Error: ' . $e->getMessage());
+            return $this->error('An unexpected error occurred during registration.', 500);
         }
     }
 
@@ -166,93 +144,90 @@ class AuthController extends ApiController
 
     public function verifyOtp(Request $request)
     {
-        // Allow email instead of user_id since frontend state might be lost
+        // Strict Validation: Require identifiers + OTP
         $request->validate([
             'user_id' => 'required_without:email|exists:users,id',
-            'email' => 'required_without:user_id|exists:users,email',
-            'otp' => 'required'
+            'email' => 'required_without:user_id|email|exists:users,email',
+            'otp' => 'required|digits:6'
         ]);
 
-        if ($request->filled('user_id')) {
-            $user = User::find($request->user_id);
-        } else {
-            $user = User::where('email', strtolower($request->email))->first();
-        }
+        try {
+            // Resolve User
+            if ($request->filled('user_id')) {
+                $user = User::find($request->user_id);
+            } else {
+                $user = User::where('email', strtolower($request->email))->first();
+            }
 
-        $cachedOtp = Cache::get('otp_' . $user->id);
+            // Retrieve OTP from secure cache
+            $cachedOtp = Cache::get('otp_' . $user->id);
 
-        if ($cachedOtp && $cachedOtp == $request->otp) {
-            // $user is already found above
-            Cache::forget('otp_' . $user->id); // Clear OTP verify
+            // Validation Logic
+            if (!$cachedOtp) {
+                return $this->error('OTP has expired. Please request a new one.', 400);
+            }
 
-            
+            if ($cachedOtp != $request->otp) {
+                return $this->error('Invalid OTP provided.', 400); // 400 Bad Request
+            }
+
+            // Success Flow
+            // 1. Invalidate OTP (Single Use Enforcement)
+            Cache::forget('otp_' . $user->id);
+
+            // 2. Verify User
+            $user->update([
+                'email_verified_at' => now(), 
+                'last_login_at' => now()
+            ]);
+
+            // 3. Issue Token
             $token = $user->createToken('auth_token')->plainTextToken;
-            $user->update(['last_login_at' => now(), 'email_verified_at' => now()]);
 
             return $this->success([
                 'token' => $token,
-                'access_token' => $token,
+                'user' => $user,
                 'token_type' => 'Bearer',
-                'user' => $user
-            ], 'OTP Verified Successfully');
-        }
+            ], 'Email verified and logged in successfully.');
 
-        return $this->error('Invalid OTP', 400);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('OTP Verify Error: ' . $e->getMessage());
+            return $this->error('Verification failed.', 500);
+        }
     }
     
-    public function resendOtp(Request $request)
+    public function resendOtp(Request $request, \App\Services\BrevoService $brevoService)
     {
-        // Allow looking up by user_id OR email
         $request->validate([
-            'user_id' => 'required_without:email|exists:users,id',
-            'email' => 'required_without:user_id|exists:users,email'
+            'email' => 'required|email|exists:users,email'
         ]);
-
-        if ($request->filled('user_id')) {
-            $user = User::find($request->user_id);
-        } else {
-            $user = User::where('email', strtolower($request->email))->first();
-        }
-
-        $otp = rand(100000, 999999);
-        Cache::put('otp_' . $user->id, $otp, 600);
-        
-        $mail_sent = false;
-        $mail_error = null;
-        $mailer_type = config('mail.default');
 
         try {
-            if ($mailer_type !== 'log') {
-                // Force debug mode for SMTP
-                if ($mailer_type === 'smtp') {
-                    config(['mail.mailers.smtp.local_domain' => env('MAIL_EHLO_DOMAIN', 'localhost')]);
-                }
-                
-                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
-                $mail_sent = true;
-                \Illuminate\Support\Facades\Log::info("Resend OTP Email sent successfully to {$user->email}");
-            } else {
-                $mail_error = "Server is in 'LOG' mode. No real email sent.";
-                \Illuminate\Support\Facades\Log::warning($mail_error);
+            $user = User::where('email', strtolower($request->email))->first();
+
+            // Rate Limiting Check
+            if (Cache::has('otp_rate_' . $user->id)) {
+                 return $this->error('Please wait before requesting another OTP.', 429);
             }
+
+            // Generate New OTP
+            $otp = rand(100000, 999999);
+            Cache::put('otp_' . $user->id, $otp, 600);
+            Cache::put('otp_rate_' . $user->id, true, 60); // 1 minute cooldown
+
+            // Send via Brevo
+            $mailSent = $brevoService->sendOtp($user->email, $otp, $user->name);
+
+            if (!$mailSent) {
+                return $this->error('Unable to send OTP at this time.', 503);
+            }
+
+            return $this->success([], 'A new verification code has been sent to your email.');
+
         } catch (\Exception $e) {
-            $mail_error = $e->getMessage();
-            \Illuminate\Support\Facades\Log::error('Resend OTP Mail Error: ' . $mail_error . ' | Trace: ' . $e->getTraceAsString());
+            \Illuminate\Support\Facades\Log::error('Resend OTP Error: ' . $e->getMessage());
+            return $this->error('Something went wrong.', 500);
         }
-
-        if (!$mail_sent) {
-             return $this->error($mail_error ?? 'Failed to send OTP email', 500, [
-                'mail_driver' => $mailer_type,
-                'debug_otp' => $otp
-            ]);
-        }
-
-        // HACK: Force OTP to show in frontend Alert because user cannot check email/logs
-        // Return as error so it pops up visually
-        return $this->error("DEBUG MODE: Your OTP is {$otp}. Email service is pending verification.", 422, [
-            'otp_sent' => true,
-            'debug_otp' => $otp
-        ]);
     }
 
     public function logout(Request $request)
