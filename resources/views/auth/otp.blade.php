@@ -30,8 +30,9 @@
             @csrf
 
             <div>
-                <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 block text-center">Enter 6-Digit Transmission Code</label>
+                <label for="otp" class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 block text-center">Enter 6-Digit Transmission Code</label>
                 <input 
+                    id="otp"
                     type="number" 
                     name="otp" 
                     class="w-full bg-slate-50 border-b-4 border-slate-200 py-4 text-center text-3xl font-black text-slate-800 focus:outline-none focus:border-[#2874f0] focus:bg-white transition-all tracking-[0.5em]"
