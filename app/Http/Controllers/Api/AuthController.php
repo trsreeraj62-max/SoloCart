@@ -95,6 +95,7 @@ class AuthController extends ApiController
             return $this->success([
                 'user_id' => $user->id,
                 'otp_sent' => true,
+                'debug_otp' => $otp, // Temporarily exposed for testing
                 'mail_driver' => $mailer_type
             ], 'User registered. Please verify OTP sent to email.');
 
@@ -239,6 +240,7 @@ class AuthController extends ApiController
 
         return $this->success([
             'otp_sent' => true,
+            'debug_otp' => $otp, // Temporarily exposed for testing
             'mail_driver' => $mailer_type
         ], 'New OTP sent to email.');
     }
