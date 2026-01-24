@@ -212,25 +212,57 @@ Route::get('/system/maintenance', function() {
 
     // 7. Create Test User Account
     if (request()->has('create_user')) {
-        $email = request('email', 'trsreeraj07@gmail.com');
-        $name = request('name', 'sreeraj');
-        $password = request('password', 'sreeraj');
-        $role = request('role', 'user'); // 'user' or 'admin'
-        
-        $existingUser = \App\Models\User::where('email', $email)->first();
-        
-        if ($existingUser) {
-            $output['user_creation'] = "User {$email} already exists (ID: {$existingUser->id}, Role: {$existingUser->role})";
-        } else {
-            $user = \App\Models\User::create([
-                'name' => $name,
-                'email' => $email,
-                'password' => \Illuminate\Support\Facades\Hash::make($password),
-                'role' => $role,
-                'email_verified_at' => now(), // Auto-verify for testing
-            ]);
+        // ... (keep existing)
+    }
+
+    // 8. Simulate Order Creation (Debug)
+    if (request()->has('simulate_order')) {
+        try {
+            $userId = request('user_id');
+            $user = \App\Models\User::find($userId);
             
-            $output['user_creation'] = "User created successfully! Email: {$email}, Password: {$password}, Role: {$role}, ID: {$user->id}";
+            if (!$user) {
+                $output['simulation'] = "User $userId not found";
+            } else {
+                // Mimic request data
+                $data = [
+                    'source' => 'direct',
+                    'address' => 'Simulated checkout address',
+                    'payment_method' => 'cod',
+                    'items' => [
+                        ['product_id' => 1, 'quantity' => 1]
+                    ]
+                ];
+                
+                // Manually invoke service to bypass HTTP layer for a moment to check logic
+                $product = \App\Models\Product::find(1);
+                $itemsData = [[
+                     'product_id' => $product->id,
+                     'quantity' => 1,
+                     'price' => $product->price
+                ]];
+                
+                $orderService = new \App\Services\OrderService();
+                $order = $orderService->createOrder($user, [
+                    'subtotal' => $product->price,
+                    'address' => $data['address'],
+                    'payment_method' => $data['payment_method'],
+                    'clear_cart' => false
+                ], $itemsData);
+                
+                $output['simulation'] = [
+                    'success' => true,
+                    'message' => 'Order created successfully via simulation',
+                    'order_id' => $order->id,
+                    'user_id' => $order->user_id
+                ];
+            }
+        } catch (\Exception $e) {
+            $output['simulation'] = [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ];
         }
     }
 
