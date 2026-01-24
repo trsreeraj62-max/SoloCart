@@ -15,7 +15,8 @@ use App\Http\Controllers\Api\{
     AdminDashboardController,
     AdminProductController,
     AdminCategoryController,
-    AdminDiscountController
+    AdminDiscountController,
+    AdminContactController
 };
 
 /*
@@ -142,4 +143,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('/discounts/category', [AdminDiscountController::class, 'applyToCategory']);
     Route::post('/discounts/all', [AdminDiscountController::class, 'applyToAll']);
     Route::post('/discounts/remove', [AdminDiscountController::class, 'removeDiscount']);
+
+    // Contact Messages
+    Route::get('/contact-messages', [AdminContactController::class, 'index']);
+    Route::post('/contact-messages/{id}/reply', [AdminContactController::class, 'reply']);
 });
