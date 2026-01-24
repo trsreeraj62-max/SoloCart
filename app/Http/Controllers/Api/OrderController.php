@@ -24,18 +24,22 @@ class OrderController extends ApiController
     {
         \Illuminate\Support\Facades\Log::info('Order Creation Request:', $request->all());
 
+        $user = $request->user(); // Explicitly get Sanctum user
+        
+        if (!$user) {
+            return $this->error('Unauthorized', 401);
+        }
+
         $request->validate([
             'address' => 'required|string',
             'payment_method' => 'required|in:cod,upi,card,netbanking',
             'source' => 'required|in:cart,direct',
-            // If direct, items is required
             'items' => 'required_if:source,direct|array',
             'items.*.product_id' => 'exists:products,id',
             'items.*.quantity' => 'integer|min:1',
         ]);
 
         try {
-            $user = Auth::user();
             $itemsData = [];
             $subtotal = 0;
             $clearCart = false;
@@ -84,6 +88,7 @@ class OrderController extends ApiController
 
             \Illuminate\Support\Facades\Log::info('Creating order with items:', $itemsData);
 
+            // Pass user explicitly
             $order = $this->orderService->createOrder($user, [
                 'subtotal' => $subtotal,
                 'address' => $request->address,
@@ -94,15 +99,12 @@ class OrderController extends ApiController
             // Reload order with relationships
             $order->load(['items.product', 'user']);
 
-            \Illuminate\Support\Facades\Log::info('Order created successfully:', ['order_id' => $order->id]);
-
             return $this->success($order, "Order placed successfully", 201);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Illuminate\Support\Facades\Log::error('Order Validation Error:', $e->errors());
             return $this->error($e->errors(), 422);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Place Order Error: ' . $e->getMessage() . ' | Stack: ' . $e->getTraceAsString());
+            \Illuminate\Support\Facades\Log::error('Place Order Error: ' . $e->getMessage());
             return $this->error("Failed to place order: " . $e->getMessage(), 500);
         }
     }
@@ -110,15 +112,14 @@ class OrderController extends ApiController
     /**
      * Get user orders
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $orders = Auth::user()->orders()->with('items.product')->latest()->get();
-            
-            \Illuminate\Support\Facades\Log::info('User orders retrieved:', [
-                'user_id' => Auth::id(),
-                'count' => $orders->count()
-            ]);
+            // Explicitly use request user ID to filter orders
+            $orders = Order::where('user_id', $request->user()->id)
+                ->with('items.product')
+                ->latest()
+                ->get();
             
             return $this->success($orders, "Orders retrieved successfully");
         } catch (\Exception $e) {
@@ -132,7 +133,8 @@ class OrderController extends ApiController
      */
     public function show($id)
     {
-        $order = Auth::user()->orders()->with('items.product')->find($id);
+        // Explicitly check user_id matching Auth user
+        $order = Order::with('items.product')->where('user_id', \Auth::id())->find($id);
         
         if (!$order) {
             return $this->error("Order not found", 404);
