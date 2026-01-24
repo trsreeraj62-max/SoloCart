@@ -37,13 +37,15 @@ class ProfileController extends ApiController
 
             // Update Image
             if ($request->hasFile('profile_image')) {
+                $disk = env('FILESYSTEM_DISK', 'public');
+
                 // Delete old image if verified strictly, but usually safe to just overwrite reference
-                if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
-                    Storage::disk('public')->delete($user->profile_photo);
+                if ($user->profile_photo && Storage::disk($disk)->exists($user->profile_photo)) {
+                    Storage::disk($disk)->delete($user->profile_photo);
                 }
                 
-                // Store new image: storage/app/public/profiles/unique_id.jpg
-                $path = $request->file('profile_image')->store('profiles', 'public');
+                // Store new image: storage/profiles/unique_id.jpg (relative path)
+                $path = $request->file('profile_image')->store('profiles', $disk);
                 $user->profile_photo = $path;
             }
 
