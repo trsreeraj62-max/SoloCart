@@ -116,8 +116,8 @@ class OrderService
         if ($status !== Order::STATUS_CANCELLED) {
             $allowed = match($oldStatus) {
                 Order::STATUS_PENDING => [Order::STATUS_APPROVED],
-                Order::STATUS_APPROVED => [Order::STATUS_PROCESSING],
-                Order::STATUS_PROCESSING => [Order::STATUS_SHIPPED], // Changed 'packed' to 'processing' to match req
+                Order::STATUS_APPROVED => [Order::STATUS_PROCESSING, Order::STATUS_SHIPPED], // Allow skipping processing
+                Order::STATUS_PROCESSING => [Order::STATUS_SHIPPED],
                 Order::STATUS_SHIPPED => [Order::STATUS_DELIVERED],
                 default => []
             };
