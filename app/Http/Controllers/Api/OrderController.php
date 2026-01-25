@@ -213,7 +213,7 @@ class OrderController extends ApiController
     /**
      * Return order
      */
-    public function returnOrder($id)
+    public function returnOrder(Request $request, $id)
     {
         $order = Auth::user()->orders()->find($id);
         if (!$order) return $this->error("Order not found", 404);
@@ -222,27 +222,21 @@ class OrderController extends ApiController
             return $this->error("Only delivered orders can be returned");
         }
 
-        // Simple return logic override (?) or just status update if allowed?
-        // Service might block transition from Delivered to Returned if not consistent?
-        // My Service doesn't have 'returned' in strict transition map for 'delivered'.
-        // Wait, requirements didn't explicitly mention 'returned' flow in "Admin status update" section but User Permissions section mentioned "Not allowed if processing/shipped/delivered" for CANCEL.
-        // Let's assume 'Return' is valid for Delivered.
-        // I need to add 'returned' to Order constants if I want to support it, or strictly follow Req 3 steps.
-        // Req 3 only listed forward path.
-        // But Req 1 mentions "returned" in commented DB code in existing file.
-        // I'll leave returnOrder as is but strictly checking Delivered.
+        $request->validate([
+            'reason' => 'nullable|string|max:500'
+        ]);
 
-        // Actually, let's just make sure Service allows it.
-        // My updated Service logic for strict transitions:
-        /*
-            $allowed = match($oldStatus) { ... Order::STATUS_SHIPPED => [Order::STATUS_DELIVERED] ... }
-        */
-        // It doesn't allow Delivered -> Returned.
-        // I'll keep it simple: Requirements didn't ask for Return logic updates, just Status System updates.
-        // I'll comment out or leave returnOrder but fix Cancel.
-        
-        // For now, let's just properly implement Cancel.
-        return $this->error("Return functionality currently disabled", 503); 
+        try {
+            \Illuminate\Support\Facades\Log::info("Order Return Request: #{$id}", [
+                'reason' => $request->input('reason', 'No reason provided'),
+                'user_id' => Auth::id()
+            ]);
+
+            $this->orderService->updateStatus($order, Order::STATUS_RETURNED);
+            return $this->success([], "Return request processed successfully. Status updated to Returned.");
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 422);
+        }
     }
 
     /**

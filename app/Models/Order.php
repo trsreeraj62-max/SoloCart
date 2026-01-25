@@ -15,6 +15,7 @@ class Order extends Model
     const STATUS_SHIPPED = 'shipped';
     const STATUS_DELIVERED = 'delivered';
     const STATUS_CANCELLED = 'cancelled';
+    const STATUS_RETURNED = 'returned';
 
     protected $fillable = [
         'user_id',
