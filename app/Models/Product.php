@@ -26,11 +26,12 @@ class Product extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'price' => 'decimal:2',
+        'discount_percent' => 'integer',
         'discount_start_date' => 'datetime',
         'discount_end_date' => 'datetime',
     ];
 
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'current_price', 'is_discount_active'];
 
     /**
      * Scope for active products
@@ -59,6 +60,44 @@ class Product extends Model
     public function cartItems()
     {
         return $this->hasMany(CartItem::class);
+    }
+
+    /**
+     * Determine if discount is currently valid based on dates
+     */
+    public function getIsDiscountActiveAttribute()
+    {
+        if (!$this->discount_percent || $this->discount_percent <= 0) {
+            return false;
+        }
+
+        $now = now();
+        
+        // If dates are null, assume always active if percent > 0
+        if (!$this->discount_start_date && !$this->discount_end_date) {
+            return true;
+        }
+
+        if ($this->discount_start_date && $this->discount_start_date->isFuture()) {
+            return false;
+        }
+
+        if ($this->discount_end_date && $this->discount_end_date->isPast()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Calculate effective price
+     */
+    public function getCurrentPriceAttribute()
+    {
+        if ($this->is_discount_active) {
+            return round($this->price * (1 - ($this->discount_percent / 100)), 2);
+        }
+        return $this->price;
     }
 
     public function getImageUrlAttribute()

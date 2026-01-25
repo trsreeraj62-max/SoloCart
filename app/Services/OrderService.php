@@ -168,47 +168,51 @@ class OrderService
     protected function sendNotification(Order $order, $type)
     {
         try {
-            $toEmail = $order->user->email;
-            $toName = $order->user->name;
-            $subject = "";
-            $html = "";
-            $attachment = null;
+            $user = $order->user;
+            if (!$user) return;
 
             switch ($type) {
                 case 'confirmation':
-                    $subject = "Order Confirmed — #{$order->id}";
-                    $html = "<h2>Thank you for your order, {$toName}!</h2>
-                             <p>Your order #{$order->id} has been received and is currently being processed.</p>
-                             <p><strong>Total Amount:</strong> ₹" . number_format($order->total, 2) . "</p>
-                             <p>We will notify you when it ships.</p>";
+                    BrevoMailService::sendOrderConfirmation($user, $order);
                     break;
+
                 case 'status_update':
-                    $status = ucfirst($order->status);
-                    $subject = "Order Status Update: {$status} — #{$order->id}";
-                    $html = "<h2>Hello {$toName},</h2>
-                             <p>Your order #{$order->id} status has been updated to: <strong>{$status}</strong>.</p>
-                             <a href='" . env('FRONTEND_URL') . "/orders.html' style='background:#2874f0; color:white; padding:10px 20px; text-decoration:none; border-radius:4px;'>View Order Details</a>";
+                    if ($order->status === Order::STATUS_DELIVERED) {
+                        try {
+                            // Generate PDF for delivery email
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', ['order' => $order]);
+                            $pdfContent = base64_encode($pdf->output());
+                            BrevoMailService::sendOrderDelivered($user, $order, $pdfContent);
+                        } catch (\Exception $pdfErr) {
+                            Log::error("Invoice Generation Failed for Order #{$order->id}: " . $pdfErr->getMessage());
+                            // Fallback to simple status update if PDF fails
+                            BrevoMailService::sendOrderStatusUpdate($user, $order);
+                        }
+                    } else {
+                        BrevoMailService::sendOrderStatusUpdate($user, $order);
+                    }
                     break;
+
                 case 'invoice':
-                    $subject = "Invoice for Your Order — #{$order->id}";
-                    $html = "<h2>Your SoloCart Invoice</h2>
-                             <p>Hi {$toName}, please find the attached invoice for your recent purchase (Order #{$order->id}).</p>";
-                    
-                    // Generate PDF Attachment
+                    // This case might be redundant now if 'delivered' status handles it, 
+                    // but we keep it for manual triggers if needed.
                     try {
                         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', ['order' => $order]);
                         $attachment = [
                             'content' => base64_encode($pdf->output()),
-                            'name' => "invoice_{$order->id}.pdf"
+                            'name' => "invoice_{$order->order_number}.pdf"
                         ];
-                    } catch (\Exception $pdfErr) {
-                        Log::error("Invoice PDF Generation Failed: " . $pdfErr->getMessage());
+                        BrevoMailService::sendMail(
+                            $user->email, 
+                            "Invoice for Order #{$order->order_number}", 
+                            "Please find attached your invoice.", 
+                            $user->name, 
+                            $attachment
+                        );
+                    } catch (\Exception $e) {
+                        Log::error("Manual Invoice Send Failed: " . $e->getMessage());
                     }
                     break;
-            }
-
-            if ($subject && $html) {
-                BrevoMailService::sendMail($toEmail, $subject, $html, $toName, $attachment);
             }
         } catch (\Exception $e) {
             Log::error("Brevo Mail Error ($type) for Order #{$order->id}: " . $e->getMessage());
