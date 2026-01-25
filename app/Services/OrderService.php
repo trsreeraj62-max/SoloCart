@@ -43,60 +43,61 @@ class OrderService
             'items_count' => count($items)
         ]);
 
-        return DB::transaction(function () use ($user, $data, $items) {
-            $fees = $this->calculateFees($data['subtotal']);
-            
-            Log::info('OrderService: Fees calculated', $fees);
-            Log::info('OrderService: Creating order for user', ['user_id' => $user->id, 'email' => $user->email]);
-            
-            $order = Order::create([
-                'user_id' => $user->id,
-                'status' => 'pending',
-                'total' => $fees['grand_total'],
-                'address' => $data['address'],
-                'payment_method' => $data['payment_method'] ?? 'pending',
-                'payment_status' => 'unpaid',
+        // DB::transaction removed for debugging persistence
+        
+        $fees = $this->calculateFees($data['subtotal']);
+        
+        Log::info('OrderService: Fees calculated', $fees);
+        Log::info('OrderService: Creating order for user', ['user_id' => $user->id, 'email' => $user->email]);
+        
+        $order = Order::create([
+            'user_id' => $user->id,
+            'status' => 'pending',
+            'total' => $fees['grand_total'],
+            'address' => $data['address'],
+            'payment_method' => $data['payment_method'] ?? 'pending',
+            'payment_status' => 'unpaid',
+        ]);
+
+        Log::info('OrderService: Order created', [
+            'order_id' => $order->id, 
+            'user_id_in_db' => $order->user_id
+        ]);
+
+        foreach ($items as $item) {
+            OrderItem::create([
+                'order_id' => $order->id,
+                'product_id' => $item['product_id'],
+                'quantity' => $item['quantity'],
+                'price' => $item['price'],
             ]);
 
-            Log::info('OrderService: Order created', [
-                'order_id' => $order->id, 
-                'user_id_in_db' => $order->user_id
-            ]);
-
-            foreach ($items as $item) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'price' => $item['price'],
-                ]);
-
-                // Decrement stock
-                Product::where('id', $item['product_id'])->decrement('stock', $item['quantity']);
-                
-                Log::info('OrderService: Item added', [
-                    'order_id' => $order->id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity']
-                ]);
-            }
-
-            // If created from cart, clear it
-            if (isset($data['clear_cart']) && $data['clear_cart']) {
-                $user->cart?->items()->delete();
-                Log::info('OrderService: Cart cleared', ['user_id' => $user->id]);
-            }
-
-            if ($order->payment_method === 'cod') {
-                $order->update(['status' => 'approved']);
-                $this->sendNotification($order, 'confirmation');
-                Log::info('OrderService: COD order auto-approved', ['order_id' => $order->id]);
-            }
-
-            Log::info('OrderService: Order creation completed', ['order_id' => $order->id]);
+            // Decrement stock
+            Product::where('id', $item['product_id'])->decrement('stock', $item['quantity']);
             
-            return $order;
-        });
+            Log::info('OrderService: Item added', [
+                'order_id' => $order->id,
+                'product_id' => $item['product_id'],
+                'quantity' => $item['quantity']
+            ]);
+        }
+
+        // If created from cart, clear it
+        if (isset($data['clear_cart']) && $data['clear_cart']) {
+            $user->cart?->items()->delete();
+            Log::info('OrderService: Cart cleared', ['user_id' => $user->id]);
+        }
+
+        if ($order->payment_method === 'cod') {
+            $order->update(['status' => 'approved']);
+            $this->sendNotification($order, 'confirmation');
+            Log::info('OrderService: COD order auto-approved', ['order_id' => $order->id]);
+        }
+
+        Log::info('OrderService: Order creation completed', ['order_id' => $order->id]);
+        
+        return $order;
+
     }
 
     /**
