@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class CheckoutController extends ApiController
 {
@@ -71,22 +72,16 @@ class CheckoutController extends ApiController
 
         try {
             $user = Auth::user();
-            \Illuminate\Support\Facades\Log::info('CheckoutController: Single Product Checkout Started', [
+            Log::info('Checkout: Single Product', [
                 'user_id' => $user->id,
                 'email' => $user->email,
-                'product_id' => $request->product_id
+                'product_id' => $request->product_id,
+                'qty' => $request->quantity
             ]);
 
             $product = Product::findOrFail($request->product_id);
             $price = $product->price - ($product->price * ($product->discount_percent / 100));
             
-            \Illuminate\Support\Facades\Log::info('CheckoutController: Product Details', [
-                'id' => $product->id,
-                'name' => $product->name,
-                'req_qty' => $request->quantity,
-                'calc_price' => $price
-            ]);
-
             $itemsData = [[
                 'product_id' => $product->id,
                 'quantity' => $request->quantity,
@@ -99,10 +94,7 @@ class CheckoutController extends ApiController
                 'payment_method' => $request->payment_method
             ], $itemsData);
 
-            \Illuminate\Support\Facades\Log::info('CheckoutController: Order Created Successfully', [
-                'order_id' => $order->id,
-                'user_id' => $order->user_id
-            ]);
+            Log::info('Checkout: Order Created', ['order_id' => $order->id]);
 
             return $this->success($order, "Order placed successfully via single product checkout");
         } catch (\Exception $e) {
