@@ -24,9 +24,8 @@ class AdminOrderController extends ApiController
         try {
             // Load orders with complete relationships
             $query = Order::with([
-                'user:id,name,email,phone', // Buyer details
-                'items.product.images', // Product with images
-                'items.product' // Eager load product details
+                'user',
+                'items.product.images' 
             ])->latest();
             
             // Filter by status
@@ -47,31 +46,13 @@ class AdminOrderController extends ApiController
 
             $orders = $query->get();
             
-            // Transform data to include calculated fields
-            $orders->transform(function ($order) {
-                $order->buyer_name = $order->user->name ?? 'N/A';
-                $order->buyer_email = $order->user->email ?? 'N/A';
-                
-                // Add line total for each item
-                $order->items->transform(function ($item) {
-                    $item->line_total = $item->price * $item->quantity;
-                    $item->product_name = $item->product->name ?? 'N/A';
-                    $item->product_image = $item->product->image_url ?? null;
-                    return $item;
-                });
-                
-                return $order;
-            });
-            
-            Log::info('Admin orders retrieved', [
-                'count' => $orders->count()
-            ]);
+            Log::info('Admin orders retrieved', ['count' => $orders->count()]);
             
             return $this->success($orders, "Admin orders retrieved");
             
         } catch (\Exception $e) {
             Log::error("Admin Orders Error: " . $e->getMessage());
-            return $this->error("Failed to retrieve orders: " . $e->getMessage(), 500);
+            return $this->error("Failed to retrieve orders", 500);
         }
     }
 
