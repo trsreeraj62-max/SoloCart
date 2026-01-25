@@ -271,4 +271,54 @@ class AuthController extends ApiController
 
         return $this->error('Upload failed');
     }
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+        
+        $user = User::where('email', $request->email)->first();
+        
+        // Security: Always return success to prevent email enumeration, unless debugging
+        if (!$user) {
+            return $this->success([], 'If an account exists with this email, a password reset code has been sent.');
+        }
+
+        $otp = rand(100000, 999999);
+        Cache::put('reset_otp_' . $user->email, $otp, 600); // 10 mins
+
+        try {
+            BrevoMailService::sendPasswordResetOtp($user->email, $otp);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Forgot Password Email Error: " . $e->getMessage());
+             return $this->error('Failed to send email. Please try again later.', 500);
+        }
+
+        return $this->success([], 'If an account exists with this email, a password reset code has been sent.');
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|digits:6',
+            'password' => 'required|min:6'
+        ]);
+
+        $cachedOtp = Cache::get('reset_otp_' . $request->email);
+
+        if (!$cachedOtp || $cachedOtp != $request->otp) {
+            return $this->error('Invalid or expired OTP', 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+             return $this->error('User not found', 404);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        Cache::forget('reset_otp_' . $request->email);
+
+        return $this->success([], 'Password reset successfully. You can now login.');
+    }
 }

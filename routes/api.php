@@ -335,6 +335,8 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/otp/verify', [AuthController::class, 'verifyOtp']);
 Route::post('/otp/resend', [AuthController::class, 'resendOtp']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 /*
 |--------------------------------------------------------------------------

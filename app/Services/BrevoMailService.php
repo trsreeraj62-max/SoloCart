@@ -56,6 +56,35 @@ class BrevoMailService
     }
 
     /**
+     * Send Password Reset OTP
+     */
+    public static function sendPasswordResetOtp($email, $otp)
+    {
+        return self::sendMail(
+            $email,
+            'Reset Your Password — SoloCart',
+            "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;'>
+                <div style='background-color: #ef4444; padding: 20px; text-align: center; color: white;'>
+                    <h1 style='margin: 0; font-style: italic;'>SoloCart</h1>
+                </div>
+                <div style='padding: 30px; line-height: 1.6;'>
+                    <h3 style='color: #1e293b;'>Password Reset Request</h3>
+                    <p>You requested to reset your password. Please use the following One-Time Password (OTP) to proceed:</p>
+                    <div style='background-color: #fef2f2; padding: 20px; text-align: center; border-radius: 4px; margin: 20px 0;'>
+                        <span style='font-size: 32px; font-weight: 900; letter-spacing: 5px; color: #ef4444;'>{$otp}</span>
+                    </div>
+                    <p style='font-size: 14px; color: #64748b;'>This code expires in 10 minutes. If you did not request this change, please ignore this email immediately.</p>
+                </div>
+                <div style='background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 12px; color: #94a3b8;'>
+                    &copy; 2026 SoloCart Industries • Security Team
+                </div>
+            </div>
+            "
+        );
+    }
+
+    /**
      * Generic Send Mail Method with proper Model types for SDK compatibility
      */
     public static function sendMail($toEmail, $subject, $htmlContent, $toName = 'User', $attachment = null)
