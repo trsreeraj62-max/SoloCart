@@ -65,6 +65,13 @@ class OrderController extends ApiController
                         'price' => $price
                     ];
                     $subtotal += $price * $item->quantity;
+                    
+                    \Illuminate\Support\Facades\Log::info('Cart Item Being Ordered', [
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product->name,
+                        'quantity' => $item->quantity,
+                        'price' => $price
+                    ]);
                 }
                 $clearCart = true;
             } else {
@@ -86,6 +93,13 @@ class OrderController extends ApiController
                         'price' => $price
                     ];
                     $subtotal += $price * $itemRequest['quantity'];
+                    
+                    \Illuminate\Support\Facades\Log::info('Direct Purchase Item', [
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'quantity' => $itemRequest['quantity'],
+                        'price' => $price
+                    ]);
                 }
             }
 
