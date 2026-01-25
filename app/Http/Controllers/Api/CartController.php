@@ -52,8 +52,11 @@ class CartController extends ApiController
                      $start = $product->discount_start_date;
                      $end = $product->discount_end_date;
                      
-                     // Check dates
-                     if ((!$start || $start->isPast()) && (!$end || $end->isFuture())) {
+                     // Check dates: Null means "always active", otherwise check range
+                     $startValid = !$start || $start->isPast();
+                     $endValid = !$end || $end->isFuture();
+                     
+                     if ($startValid && $endValid) {
                          $isActiveDiscount = true;
                      }
                 }
