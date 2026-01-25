@@ -18,7 +18,7 @@ The status of your order **#{{ $order->id }}** has been updated to: **{{ ucwords
 Current Status: **{{ ucwords(str_replace('_', ' ', $status)) }}**
 </x-mail::panel>
 
-<x-mail::button :url="route('orders.show', $order->id)">
+<x-mail::button :url="config('app.frontend_url') . '/orders.html'">
 View Order Details
 </x-mail::button>
 

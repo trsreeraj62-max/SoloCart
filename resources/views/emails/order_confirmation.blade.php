@@ -18,7 +18,7 @@ Your order **#{{ $order->id }}** has been successfully placed. We are currently 
 **Delivery Address:**
 {{ $order->address }}
 
-<x-mail::button :url="route('orders.show', $order->id)">
+<x-mail::button :url="config('app.frontend_url') . '/orders.html'">
 View Your Order
 </x-mail::button>
 

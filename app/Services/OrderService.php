@@ -119,6 +119,7 @@ class OrderService
                 Order::STATUS_APPROVED => [Order::STATUS_PROCESSING, Order::STATUS_SHIPPED], // Allow skipping processing
                 Order::STATUS_PROCESSING => [Order::STATUS_SHIPPED],
                 Order::STATUS_SHIPPED => [Order::STATUS_DELIVERED],
+                Order::STATUS_DELIVERED => [Order::STATUS_RETURNED],
                 default => []
             };
 

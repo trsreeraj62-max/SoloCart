@@ -228,10 +228,12 @@ class OrderController extends ApiController
 
         try {
             \Illuminate\Support\Facades\Log::info("Order Return Request: #{$id}", [
-                'reason' => $request->input('reason', 'No reason provided'),
                 'user_id' => Auth::id()
             ]);
+            \Illuminate\Support\Facades\Log::info("Order Return Request: {$order->id} - Reason: {$request->reason}");
 
+            $order->update(['return_reason' => $request->reason]);
+            
             $this->orderService->updateStatus($order, Order::STATUS_RETURNED);
             return $this->success([], "Return request processed successfully. Status updated to Returned.");
         } catch (\Exception $e) {
