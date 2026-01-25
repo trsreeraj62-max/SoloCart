@@ -30,36 +30,22 @@ Route::get('/health', fn () => response()->json(['status' => 'ok']));
 Route::get('/test-email', function() {
     try {
         $to = request('email', 'trsreeraj07@gmail.com');
-        \Illuminate\Support\Facades\Mail::raw('SoloCart API Email Test Details: ' . now(), function ($message) use ($to) {
-            $message->to($to)
-                    ->subject('SoloCart API Connectivity Test');
-        });
-        return response()->json([
-            'success' => true,
-            'message' => "Email sent successfully to {$to}",
-            'driver' => config('mail.default'),
-            'host' => config('mail.mailers.smtp.host'),
-            'port' => config('mail.mailers.smtp.port'),
-            'encryption' => config('mail.mailers.smtp.encryption'),
-            'username_set' => !empty(config('mail.mailers.smtp.username'))
-        ]);
-    } catch (\Exception $e) {
-        $error = $e->getMessage();
-        $tip = null;
-        if (str_contains($error, 'timed out')) {
-            $tip = "Timeout detected. Try changing MAIL_PORT to 2525 in Render Environment Variables. This often bypasses firewall blocks.";
-        }
+        $otp = "TEST-".rand(100, 999);
+        
+        \App\Services\BrevoMailService::sendOtp($to, $otp);
         
         return response()->json([
+            'success' => true,
+            'message' => "Test email (SDK API) sent successfully to {$to}",
+            'otp_sent' => $otp,
+            'service' => 'Brevo (HTTPS API)'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
             'success' => false,
-            'message' => 'Email failed to send',
-            'error' => $error,
-            'tip' => $tip,
-            'config' => [
-                'driver' => config('mail.default'),
-                'host' => config('mail.mailers.smtp.host'),
-                'port' => config('mail.mailers.smtp.port'),
-            ]
+            'message' => 'Brevo API test failed',
+            'error' => $e->getMessage(),
+            'check' => 'Ensure BREVO_API_KEY is set in Render Environment Variables.'
         ], 500);
     }
 });

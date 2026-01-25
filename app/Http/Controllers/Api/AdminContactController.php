@@ -60,13 +60,27 @@ class AdminContactController extends ApiController
             $message->status = 'replied';
             $message->save();
 
-            // Send Email Safely
+            // Send Email Safely via Brevo API
             try {
-                Mail::to($message->email)->send(new AdminReplyMail($message, $request->reply));
+                $html = "
+                    <div style='font-family: sans-serif; padding: 20px;'>
+                        <h2 style='color: #2874f0;'>SoloCart Support Reply</h2>
+                        <p>Hello {$message->name},</p>
+                        <p>Regarding your inquiry: <i>\"{$message->message}\"</i></p>
+                        <div style='background: #f1f5f9; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+                            <strong>Our Reply:</strong><br>
+                            {$request->reply}
+                        </div>
+                        <p>If you have more questions, feel free to contact us again.</p>
+                        <hr>
+                        <p style='font-size: 12px; color: #64748b;'>&copy; 2026 SoloCart Industries</p>
+                    </div>
+                ";
+                
+                \App\Services\BrevoMailService::sendMail($message->email, 'Re: Your SoloCart Inquiry', $html, $message->name);
                 $emailSent = true;
             } catch (\Exception $e) {
-                // Log mail error but don't fail the request
-                \Illuminate\Support\Facades\Log::error("Mail send failed for ID $id: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error("Brevo Admin Reply Failed: " . $e->getMessage());
                 $emailSent = false;
             }
 

@@ -35,10 +35,10 @@ class AuthWebController extends Controller
             // Check 2 months logic
             $twoMonthsAgo = Carbon::now()->subMonths(2);
             if (!$user->last_login_at || Carbon::parse($user->last_login_at)->lt($twoMonthsAgo)) {
-                 $otp = rand(100000, 999999);
-                 Cache::put('otp_' . $user->id, $otp, 600);
-                 // Send OTP (email)
-                 \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
+                  $otp = rand(100000, 999999);
+                  Cache::put('otp_' . $user->id, $otp, 600);
+                  // Send OTP via Brevo API
+                  \App\Services\BrevoMailService::sendOtp($user->email, $otp);
                  
                  // Store user_id in session to verify OTP
                  session(['otp_user_id' => $user->id]);
@@ -77,7 +77,8 @@ class AuthWebController extends Controller
             $otp = rand(100000, 999999);
             Cache::put('otp_' . $user->id, $otp, 600);
             
-            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otp));
+            // Send OTP via Brevo API
+            \App\Services\BrevoMailService::sendOtp($user->email, $otp);
             
             \Illuminate\Support\Facades\DB::commit();
 

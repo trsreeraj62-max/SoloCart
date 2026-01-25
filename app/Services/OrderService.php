@@ -163,24 +163,55 @@ class OrderService
     }
 
     /**
-     * Centralized notification sender
+     * Centralized notification sender (UPGRADED for Brevo API on Render)
      */
     protected function sendNotification(Order $order, $type)
     {
         try {
+            $toEmail = $order->user->email;
+            $toName = $order->user->name;
+            $subject = "";
+            $html = "";
+            $attachment = null;
+
             switch ($type) {
                 case 'confirmation':
-                    Mail::to($order->user->email)->send(new OrderConfirmationMail($order));
+                    $subject = "Order Confirmed — #{$order->id}";
+                    $html = "<h2>Thank you for your order, {$toName}!</h2>
+                             <p>Your order #{$order->id} has been received and is currently being processed.</p>
+                             <p><strong>Total Amount:</strong> ₹" . number_format($order->total, 2) . "</p>
+                             <p>We will notify you when it ships.</p>";
                     break;
                 case 'status_update':
-                    Mail::to($order->user->email)->send(new OrderStatusMail($order, $order->status));
+                    $status = ucfirst($order->status);
+                    $subject = "Order Status Update: {$status} — #{$order->id}";
+                    $html = "<h2>Hello {$toName},</h2>
+                             <p>Your order #{$order->id} status has been updated to: <strong>{$status}</strong>.</p>
+                             <a href='" . env('FRONTEND_URL') . "/orders.html' style='background:#2874f0; color:white; padding:10px 20px; text-decoration:none; border-radius:4px;'>View Order Details</a>";
                     break;
                 case 'invoice':
-                    Mail::to($order->user->email)->send(new InvoiceMail($order));
+                    $subject = "Invoice for Your Order — #{$order->id}";
+                    $html = "<h2>Your SoloCart Invoice</h2>
+                             <p>Hi {$toName}, please find the attached invoice for your recent purchase (Order #{$order->id}).</p>";
+                    
+                    // Generate PDF Attachment
+                    try {
+                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', ['order' => $order]);
+                        $attachment = [
+                            'content' => base64_encode($pdf->output()),
+                            'name' => "invoice_{$order->id}.pdf"
+                        ];
+                    } catch (\Exception $pdfErr) {
+                        Log::error("Invoice PDF Generation Failed: " . $pdfErr->getMessage());
+                    }
                     break;
             }
+
+            if ($subject && $html) {
+                BrevoMailService::sendMail($toEmail, $subject, $html, $toName, $attachment);
+            }
         } catch (\Exception $e) {
-            Log::error("Mail Error ($type) for Order #{$order->id}: " . $e->getMessage());
+            Log::error("Brevo Mail Error ($type) for Order #{$order->id}: " . $e->getMessage());
         }
     }
 }
