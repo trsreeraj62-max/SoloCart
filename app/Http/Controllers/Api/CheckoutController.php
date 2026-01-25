@@ -57,6 +57,9 @@ class CheckoutController extends ApiController
     /**
      * Checkout from a single product (Buy Now)
      */
+    /**
+     * Checkout from a single product (Buy Now)
+     */
     public function singleProductCheckout(Request $request)
     {
         $request->validate([
@@ -67,20 +70,39 @@ class CheckoutController extends ApiController
         ]);
 
         try {
+            $user = Auth::user();
+            \Illuminate\Support\Facades\Log::info('CheckoutController: Single Product Checkout Started', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'product_id' => $request->product_id
+            ]);
+
             $product = Product::findOrFail($request->product_id);
             $price = $product->price - ($product->price * ($product->discount_percent / 100));
             
+            \Illuminate\Support\Facades\Log::info('CheckoutController: Product Details', [
+                'id' => $product->id,
+                'name' => $product->name,
+                'req_qty' => $request->quantity,
+                'calc_price' => $price
+            ]);
+
             $itemsData = [[
                 'product_id' => $product->id,
                 'quantity' => $request->quantity,
                 'price' => $price
             ]];
 
-            $order = $this->orderService->createOrder(Auth::user(), [
+            $order = $this->orderService->createOrder($user, [
                 'subtotal' => $price * $request->quantity,
                 'address' => $request->address,
                 'payment_method' => $request->payment_method
             ], $itemsData);
+
+            \Illuminate\Support\Facades\Log::info('CheckoutController: Order Created Successfully', [
+                'order_id' => $order->id,
+                'user_id' => $order->user_id
+            ]);
 
             return $this->success($order, "Order placed successfully via single product checkout");
         } catch (\Exception $e) {
@@ -101,6 +123,11 @@ class CheckoutController extends ApiController
 
         try {
             $user = Auth::user();
+            \Illuminate\Support\Facades\Log::info('CheckoutController: Cart Checkout Started', [
+                'user_id' => $user->id,
+                'email' => $user->email
+            ]);
+            
             $cart = $user->cart;
 
             if (!$cart || $cart->items->count() === 0) {
@@ -118,6 +145,12 @@ class CheckoutController extends ApiController
                     'price' => $price
                 ];
                 $subtotal += $price * $item->quantity;
+                
+                \Illuminate\Support\Facades\Log::info('CheckoutController: Cart Item', [
+                    'product_id' => $item->product_id,
+                    'name' => $item->product->name,
+                    'qty' => $item->quantity
+                ]);
             }
 
             $order = $this->orderService->createOrder($user, [
@@ -126,6 +159,11 @@ class CheckoutController extends ApiController
                 'payment_method' => $request->payment_method,
                 'clear_cart' => true
             ], $itemsData);
+
+            \Illuminate\Support\Facades\Log::info('CheckoutController: Cart Order Created', [
+                'order_id' => $order->id,
+                'user_id' => $order->user_id
+            ]);
 
             return $this->success($order, "Order placed successfully from cart");
         } catch (\Exception $e) {
