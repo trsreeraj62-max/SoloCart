@@ -32,6 +32,8 @@ class CartController extends ApiController
                 ], "Cart retrieved");
             }
 
+            $totalMrp = 0;
+            $totalDiscount = 0;
             $subtotal = 0;
             $cartItems = [];
 
@@ -39,42 +41,71 @@ class CartController extends ApiController
                 if (!$item->product) continue;
 
                 $product = $item->product;
-                // Price calculation with discount
-                $finalPrice = $product->price - ($product->price * ($product->discount_percent / 100));
                 
-                $lineTotal = $finalPrice * $item->quantity;
+                // Use the model's smart accessor if available, or replicate logic
+                $originalPrice = $product->price;
+                
+                // Effective Price Calculation (respecting dates)
+                $isActiveDiscount = false;
+                if ($product->discount_percent > 0) {
+                     $now = now();
+                     $start = $product->discount_start_date;
+                     $end = $product->discount_end_date;
+                     
+                     // Check dates
+                     if ((!$start || $start->isPast()) && (!$end || $end->isFuture())) {
+                         $isActiveDiscount = true;
+                     }
+                }
+                
+                $finalPrice = $isActiveDiscount 
+                    ? round($originalPrice * (1 - ($product->discount_percent / 100)), 2)
+                    : $originalPrice;
+
+                $qty = $item->quantity;
+                $lineTotal = $finalPrice * $qty;
+                $lineMrp = $originalPrice * $qty;
+
+                $totalMrp += $lineMrp;
                 $subtotal += $lineTotal;
 
                 $cartItems[] = [
                     'id' => $item->id,
                     'product_id' => $item->product_id,
                     'name' => $product->name,
-                    'image' => $product->image_url, // Assuming accessor exists
-                    'price' => round($finalPrice, 2),
-                    'original_price' => $product->price,
-                    'discount_percent' => $product->discount_percent,
-                    'quantity' => $item->quantity,
-                    'line_total' => round($lineTotal, 2)
+                    'image' => $product->image_url,
+                    'price' => $finalPrice,
+                    'original_price' => $originalPrice,
+                    'discount_percent' => $isActiveDiscount ? $product->discount_percent : 0,
+                    'quantity' => $qty,
+                    'line_total' => $lineTotal
                 ];
             }
 
-            // Calculation Rules
-            $tax = $subtotal * 0.18;
-            $shipping = $subtotal > 500 ? 0 : 50;
-            // Free shipping if subtotal is 0? Generally yes, but logic says >500 is free, <=500 is 50. 
-            // If subtotal is 0 (empty cart items found?), shipping should be 0.
-            if ($subtotal == 0) $shipping = 0;
+            // Savings
+            $totalDiscount = $totalMrp - $subtotal;
 
-            $total = $subtotal + $tax + $shipping;
+            // Extra Fees
+            // $tax = $subtotal * 0.18; // Included in price usually for B2C
+            $shipping = ($subtotal > 0 && $subtotal < 500) ? 40 : 0; 
+            
+            $total = $subtotal + $shipping;
 
             $response = [
                 'items' => $cartItems,
+                'total_items' => count($cartItems),
                 'summary' => [
+                    'total_mrp' => round($totalMrp, 2),
+                    'total_discount' => round($totalDiscount, 2),
                     'subtotal' => round($subtotal, 2),
-                    'tax' => round($tax, 2),
                     'shipping' => $shipping,
-                    'total' => round($total, 2)
-                ]
+                    'total_price' => round($total, 2),
+                    'grand_total' => round($total, 2)
+                ],
+                // Flattened keys for frontend ease
+                'total_mrp' => round($totalMrp, 2),
+                'total_price' => round($total, 2),
+                'total_discount' => round($totalDiscount, 2)
             ];
 
             return $this->success($response, "Cart retrieved");
