@@ -167,6 +167,11 @@ Route::get('/system/maintenance', function() {
                 'order_items_exists' => \Illuminate\Support\Facades\Schema::hasTable('order_items'),
                 'users_exists' => \Illuminate\Support\Facades\Schema::hasTable('users'),
             ],
+            'route_list' => collect(\Illuminate\Support\Facades\Route::getRoutes())->map(function($route) {
+                return $route->uri() . ' (' . implode('|', $route->methods()) . ')';
+            })->filter(function($uri) {
+                return str_contains($uri, 'checkout');
+            })->values(),
             'users_stats' => \App\Models\User::withCount('orders')->get()->map(function($u) {
                 return [
                     'id' => $u->id,
