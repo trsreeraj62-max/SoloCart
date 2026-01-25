@@ -194,6 +194,18 @@ Route::get('/system/maintenance', function() {
         ];
     }
 
+    // 5.5 View Logs
+    if (request()->has('logs')) {
+        $logFile = storage_path('logs/laravel.log');
+        if (file_exists($logFile)) {
+            $lines = request('lines', 100);
+            $content = file($logFile);
+            $output['logs'] = array_slice($content, -$lines);
+        } else {
+            $output['logs'] = "Log file not found at $logFile";
+        }
+    }
+
     // 6. Create Test Order
     if (request()->has('create_test_order')) {
         try {
