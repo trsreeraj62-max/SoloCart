@@ -295,7 +295,8 @@ class AuthController extends ApiController
         ]);
 
         // Create Link
-        $frontendUrl = env('FRONTEND_URL', 'https://solocart-frontend.onrender.com');
+        // Force the correct Render URL as requested, ignoring potential misconfigured env vars
+        $frontendUrl = 'https://solocart-frontend.onrender.com';
         // Assume frontend handles /reset-password?token=XYZ
         $link = "{$frontendUrl}/reset-password.html?token={$token}&email=" . urlencode($email); 
         // Note: Email is often needed payload for reset, but user prompt said payload is only token, password, confirmation.

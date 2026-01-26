@@ -181,7 +181,7 @@ class BrevoMailService
                     </div>
 
                     <div style='text-align: center; margin-top: 30px;'>
-                         <a href='" . env('FRONTEND_URL', 'https://solocart.onrender.com') . "/order-details.html?id={$order->id}' style='background-color: #0f172a; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;'>Track Your Order</a>
+                         <a href='" . env('FRONTEND_URL', 'https://solocart-frontend.onrender.com') . "/order-details.html?id={$order->id}' style='background-color: #0f172a; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;'>Track Your Order</a>
                     </div>
                 </div>
 
@@ -225,7 +225,7 @@ class BrevoMailService
                     <h2 style='color: #1e293b; margin: 0 0 10px;'>Status Update</h2>
                     <p style='color: #64748b; font-size: 16px; margin: 0 0 30px;'>Your order <strong>#{$order->order_number}</strong> is now <strong style='color: {$color}; text-transform: uppercase;'>{$status}</strong>.</p>
                     
-                    <a href='" . env('FRONTEND_URL', 'https://solocart.onrender.com') . "/order-details.html?id={$order->id}' style='background-color: border: 1px solid #e2e8f0; color: #475569; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; border: 2px solid #e2e8f0; display: inline-block;'>View Order Details</a>
+                    <a href='" . env('FRONTEND_URL', 'https://solocart-frontend.onrender.com') . "/order-details.html?id={$order->id}' style='background-color: border: 1px solid #e2e8f0; color: #475569; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; border: 2px solid #e2e8f0; display: inline-block;'>View Order Details</a>
                 </div>
 
                 <div style='background-color: #f8fafc; padding: 20px; text-align: center; color: #94a3b8; font-size: 12px;'>
@@ -266,7 +266,7 @@ class BrevoMailService
                         <p style='margin: 5px 0 0; color: #15803d; font-size: 12px;'>A copy of your invoice is attached to this email for your records.</p>
                     </div>
 
-                    <a href='" . env('FRONTEND_URL', 'https://solocart.onrender.com') . "/order-details.html?id={$order->id}' style='background-color: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);'>Rate Your Experience</a>
+                    <a href='" . env('FRONTEND_URL', 'https://solocart-frontend.onrender.com') . "/order-details.html?id={$order->id}' style='background-color: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);'>Rate Your Experience</a>
                 </div>
 
                 <!-- Footer -->
