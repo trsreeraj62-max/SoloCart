@@ -13,15 +13,21 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        // Use firstOrCreate to ensure we don't duplicate or error if exists
-        User::firstOrCreate(
-            ['email' => 'admin@store.com'], 
+        // 1. Demote Old Admin if exists
+        $oldAdmin = User::where('email', 'trsreeraj07@gmail.com')->first();
+        if ($oldAdmin) {
+            $oldAdmin->update(['role' => 'user']);
+        }
+
+        // 2. Create or Update New Admin
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@store.com'],
             [
-                'name' => 'Admin User',
-                'password' => Hash::make('admin123'),
+                'name' => 'SoloCart Admin',
                 'role' => 'admin',
-                'phone' => '1234567890',
+                'phone' => '0000000000',
                 'email_verified_at' => now(),
+                'password' => Hash::make('admin123'),
             ]
         );
     }

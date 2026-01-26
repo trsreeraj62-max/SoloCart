@@ -19,10 +19,11 @@ class AdminMiddleware
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        if (!$request->user() || $request->user()->role !== 'admin') {
+        // Strict Admin Check: Only admin@store.com allowed
+        if (!$request->user() || $request->user()->role !== 'admin' || $request->user()->email !== 'admin@store.com') {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized'
+                'message' => 'Unauthorized Access. Strict Admin Policy Enforced.'
             ], 403);
         }
         return $next($request);

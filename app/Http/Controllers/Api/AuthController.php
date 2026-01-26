@@ -275,50 +275,109 @@ class AuthController extends ApiController
     {
         $request->validate(['email' => 'required|email']);
         
-        $user = User::where('email', $request->email)->first();
+        $email = strtolower($request->email);
+        $user = User::where('email', $email)->first();
         
-        // Security: Always return success to prevent email enumeration, unless debugging
+        // Security: Always return success to prevent email enumeration
         if (!$user) {
-            return $this->success([], 'If an account exists with this email, a password reset code has been sent.');
+            return $this->success([], 'If an account exists with this email, a password reset link has been sent.');
         }
 
-        $otp = rand(100000, 999999);
-        Cache::put('reset_otp_' . $user->email, $otp, 600); // 10 mins
+        // Generate Secure Token
+        $token = \Illuminate\Support\Str::random(64);
+        
+        // Store in DB (Standard Laravel Table)
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $email)->delete();
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->insert([
+            'email' => $email,
+            'token' => Hash::make($token), // Hash token for security
+            'created_at' => now()
+        ]);
+
+        // Create Link
+        $frontendUrl = env('FRONTEND_URL', 'https://solocart-frontend.onrender.com');
+        // Assume frontend handles /reset-password?token=XYZ
+        $link = "{$frontendUrl}/reset-password.html?token={$token}&email=" . urlencode($email); 
+        // Note: Email is often needed payload for reset, but user prompt said payload is only token, password, confirmation.
+        // If payload relies ONLY on token, the backend must find email by token.
+        // Standard Laravel password_resets stores hashed token, so we can't look up by token easily unless we iterate or store plain (Laravel default stores plain in v10-, hashed in v11? wait).
+        // Update: Standard Laravel `password_reset_tokens` has `token` column. 
+        // If we hash it, we can't find the row by token alone. exist? 
+        // PROMPT REQUIREMENTS: 
+        // Payload: { "token": "...", "password": "...", "password_confirmation": "..." }
+        // This implies the lookup MUST be done via Token.
+        // If we hash the token in DB, we cannot look it up by token from Request.
+        // So we must store it PLAIN TEXT in DB if we want to lookup by token, OR the frontend must send Email + Token.
+        // PROMPT says: Payload: { "token": "...", "password": "..." }. NO EMAIL.
+        // So I must receive the token and find the user.
+        // Thus, I will store the token as PLAIN TEXT or (if security demands) I'm stuck because I can't look it up.
+        // However, Laravel default PasswordBroker uses email + token. 
+        // Since I am implementing custom flow:
+        // I will store the token (Str::random(64)) directly in `token` column.
+        // Wait, `password_reset_tokens` usually has (email, token, created_at).
+        // If I can't send email in payload, I can't use composite key.
+        // I will rely on `token` being unique enough? No, `password_reset_tokens` doesn't enforce unique token usually.
+        // But for this custom flow, I will create a unique token.
+        // Let's assume I can store it.
+        
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $email)->delete();
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->insert([
+            'email' => $email,
+            'token' => $token, // Store plain to allow lookup by token
+            'created_at' => now()
+        ]);
 
         try {
-            BrevoMailService::sendPasswordResetOtp($user->email, $otp);
+            BrevoMailService::sendPasswordResetLink($email, $link);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Forgot Password Email Error: " . $e->getMessage());
              return $this->error('Failed to send email. Please try again later.', 500);
         }
 
-        return $this->success([], 'If an account exists with this email, a password reset code has been sent.');
+        return $this->success([], 'If an account exists with this email, a password reset link has been sent.');
     }
 
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
-            'otp' => 'required|digits:6',
-            'password' => 'required|min:6'
+            'token' => 'required',
+            'password' => 'required|confirmed|min:6',
         ]);
 
-        $cachedOtp = Cache::get('reset_otp_' . $request->email);
+        // Find token in DB
+        // Since we don't have email, we look for the token.
+        // CAUTION: Laravel default table has (email, token). Email is primary? No, usually index.
+        // schema: string('email')->primary();
+        // matches `0001_01_01_000000_create_users_table.php`: $table->string('email')->primary();
+        // So email is primary key. One token per email.
+        // We can query `DB::table('...')->where('token', $request->token)->first()`
+        
+        $record = \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+                    ->where('token', $request->token)
+                    ->first();
 
-        if (!$cachedOtp || $cachedOtp != $request->otp) {
-            return $this->error('Invalid or expired OTP', 422);
+        if (!$record) {
+            return $this->error('Invalid or expired reset token.', 400);
         }
 
-        $user = User::where('email', $request->email)->first();
+        // Check Expiry (15 mins)
+        if (Carbon::parse($record->created_at)->addMinutes(15)->isPast()) {
+            \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $record->email)->delete();
+            return $this->error('Reset link has expired.', 400);
+        }
+
+        $user = User::where('email', $record->email)->first();
         if (!$user) {
-             return $this->error('User not found', 404);
+             return $this->error('User not found.', 404);
         }
 
+        // Update Password
         $user->password = Hash::make($request->password);
         $user->save();
 
-        Cache::forget('reset_otp_' . $request->email);
+        // Invalidate Token
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $record->email)->delete();
 
-        return $this->success([], 'Password reset successfully. You can now login.');
+        return $this->success([], 'Password updated successfully. You can now login with your new password.');
     }
 }

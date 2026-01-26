@@ -115,6 +115,41 @@ Route::get('/system/maintenance', function() {
         }
     }
 
+    // 3.5 Fix Admin Account (Strict Policy)
+    if (request()->has('fix_admin')) {
+        try {
+            // Demote Old Admin
+            $oldAdmin = \App\Models\User::where('email', 'trsreeraj07@gmail.com')->first();
+            if ($oldAdmin) {
+                $oldAdmin->role = 'user';
+                $oldAdmin->save();
+                $output['admin_fix_old'] = "Demoted trsreeraj07@gmail.com to user.";
+            }
+
+            // Create/Update New Admin
+            $newAdmin = \App\Models\User::where('email', 'admin@store.com')->first();
+            if (!$newAdmin) {
+                $newAdmin = \App\Models\User::create([
+                    'name' => 'Super Admin',
+                    'email' => 'admin@store.com',
+                    'password' => \Illuminate\Support\Facades\Hash::make('admin123'),
+                    'role' => 'admin',
+                    'email_verified_at' => now(),
+                    'phone' => '0000000000'
+                ]);
+                $output['admin_fix_new'] = "Created new admin: admin@store.com";
+            } else {
+                $newAdmin->update([
+                    'role' => 'admin',
+                    'password' => \Illuminate\Support\Facades\Hash::make('admin123')
+                ]);
+                $output['admin_fix_new'] = "Updated existing admin: admin@store.com";
+            }
+        } catch (\Exception $e) {
+            $output['admin_fix_error'] = $e->getMessage();
+        }
+    }
+
     if (request()->has('promote_email')) {
         $email = request('promote_email');
         $user = \App\Models\User::where('email', $email)->first();
