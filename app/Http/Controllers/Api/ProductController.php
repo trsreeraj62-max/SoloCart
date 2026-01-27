@@ -37,11 +37,32 @@ class ProductController extends ApiController
             // Log the query sql for debugging
             // \Illuminate\Support\Facades\Log::debug($query->toSql());
 
+            // Sorting
+            if ($request->has('sort')) {
+                switch ($request->sort) {
+                    case 'price_asc':
+                        $query->orderBy('price', 'asc');
+                        break;
+                    case 'price_desc':
+                        $query->orderBy('price', 'desc');
+                        break;
+                    case 'newest':
+                    default:
+                        $query->latest();
+                        break;
+                }
+            } else {
+                $query->latest();
+            }
+            
+            // Log the query sql for debugging
+            // \Illuminate\Support\Facades\Log::debug($query->toSql());
+
             // Return all or paginate
             if ($request->has('all')) {
-                $products = $query->latest()->get();
+                $products = $query->get();
             } else {
-                $products = $query->latest()->paginate(20);
+                $products = $query->paginate(20);
             }
             
             \Illuminate\Support\Facades\Log::info('API Product Index Result Count: ' . ($products instanceof \Illuminate\Pagination\LengthAwarePaginator ? $products->total() : $products->count()));
