@@ -23,9 +23,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        Schema::defaultStringLength(191);
+        \Illuminate\Support\Facades\Schema::defaultStringLength(191);
 
-        if (app()->environment('production')) {
+        if (app()->environment('production') || env('APP_ENV') === 'production') {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+
             try {
                 // Run migrations
                 Artisan::call('migrate', ['--force' => true]);
@@ -40,5 +42,4 @@ class AppServiceProvider extends ServiceProvider
             }
         }
     }
-
 }
