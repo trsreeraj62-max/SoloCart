@@ -115,46 +115,56 @@ class CheckoutController extends ApiController
 
         try {
             $user = Auth::user();
-            $cart = $user->cart()->with('items.product')->first();
-
+            
+            // Log the incoming request to see if items are provided
             \Illuminate\Support\Facades\Log::info('CheckoutController: Cart Checkout Started', [
                 'user_id' => $user->id,
-                'email' => $user->email,
-                'cart_exists' => !!$cart,
-                'item_count' => $cart ? $cart->items->count() : 0
+                'has_items_in_payload' => $request->has('items'),
+                'payment_method' => $request->payment_method
             ]);
-            
-            if (!$cart || $cart->items->count() === 0) {
-                return $this->error("Your cart is empty");
-            }
 
             $itemsData = [];
             $subtotal = 0;
 
-            foreach ($cart->items as $item) {
-                if (!$item->product) {
-                    \Illuminate\Support\Facades\Log::warning("CheckoutController: Item missing product", ['item_id' => $item->id]);
-                    continue;
+            // STRATEGY: If items are passed in the payload, trust them (but verify in DB). 
+            // Otherwise, fallback to the persistent DB cart.
+            if ($request->has('items') && is_array($request->items) && count($request->items) > 0) {
+                \Illuminate\Support\Facades\Log::info('CheckoutController: Processing from payload items');
+                foreach ($request->items as $itemData) {
+                    $product = Product::find($itemData['product_id']);
+                    if (!$product) continue;
+
+                    $price = (float) $product->current_price;
+                    $itemsData[] = [
+                        'product_id' => $product->id,
+                        'quantity' => $itemData['quantity'],
+                        'price' => $price
+                    ];
+                    $subtotal += $price * $itemData['quantity'];
+                }
+            } else {
+                \Illuminate\Support\Facades\Log::info('CheckoutController: Processing from database cart');
+                $cart = $user->cart()->with('items.product')->first();
+                
+                if (!$cart || $cart->items->count() === 0) {
+                    return $this->error("Your cart is empty");
                 }
 
-                $price = (float) $item->product->current_price;
-                $itemsData[] = [
-                    'product_id' => $item->product_id,
-                    'quantity' => $item->quantity,
-                    'price' => $price
-                ];
-                $subtotal += $price * $item->quantity;
-                
-                \Illuminate\Support\Facades\Log::info('CheckoutController: Processing Cart Item', [
-                    'product_id' => $item->product_id,
-                    'name' => $item->product->name,
-                    'qty' => $item->quantity,
-                    'price' => $price
-                ]);
+                foreach ($cart->items as $item) {
+                    if (!$item->product) continue;
+
+                    $price = (float) $item->product->current_price;
+                    $itemsData[] = [
+                        'product_id' => $item->product_id,
+                        'quantity' => $item->quantity,
+                        'price' => $price
+                    ];
+                    $subtotal += $price * $item->quantity;
+                }
             }
 
             if (empty($itemsData)) {
-                return $this->error("Your cart items are invalid or unavailable.");
+                return $this->error("No valid items found to checkout.");
             }
 
             $order = $this->orderService->createOrder($user, [
