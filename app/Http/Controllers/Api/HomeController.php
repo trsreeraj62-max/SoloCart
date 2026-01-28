@@ -13,7 +13,7 @@ class HomeController extends Controller
     public function index()
     {
         // Cache home data for 10 minutes to improve performance
-        return Cache::remember('home_data', 600, function () {
+        return Cache::remember('home_data', 60, function () {
             $products = Product::with(['category', 'images'])
                 ->active()
                 ->get();
@@ -28,7 +28,7 @@ class HomeController extends Controller
                 'success' => true,
                 'message' => 'Home data retrieved',
                 'data' => [
-                    'banners' => Banner::all(),
+                    'banners' => Banner::active()->get(),
                     'categories' => $categories,
                     'products' => $products->take(20),
                     'featured_products' => $products->shuffle()->take(8),

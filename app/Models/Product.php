@@ -16,6 +16,8 @@ class Product extends Model
         'description',
         'price',
         'stock',
+        'discount_type',
+        'discount_value',
         'discount_percent',
         'discount_start_date',
         'discount_end_date',
@@ -26,12 +28,19 @@ class Product extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'price' => 'decimal:2',
+        'discount_value' => 'decimal:2',
         'discount_percent' => 'integer',
         'discount_start_date' => 'datetime',
         'discount_end_date' => 'datetime',
     ];
 
-    protected $appends = ['image_url', 'current_price', 'is_discount_active'];
+    protected $appends = [
+        'image_url', 
+        'current_price', 
+        'is_discount_active', 
+        'discount_label', 
+        'savings_amount'
+    ];
 
     /**
      * Scope for active products
@@ -63,25 +72,27 @@ class Product extends Model
     }
 
     /**
-     * Determine if discount is currently valid based on dates
+     * Determine if discount is currently valid based on dates and value
      */
     public function getIsDiscountActiveAttribute()
     {
-        if (!$this->discount_percent || $this->discount_percent <= 0) {
+        // Prioritize discount_value if set, otherwise fallback to discount_percent
+        $hasValue = ($this->discount_type === 'flat' && $this->discount_value > 0) || 
+                    ($this->discount_type === 'percentage' && $this->discount_value > 0) ||
+                    ($this->discount_percent > 0);
+
+        if (!$hasValue || !$this->is_active) {
             return false;
         }
 
         $now = now();
         
-        // If dates are null, assume always active if percent > 0
-        if (!$this->discount_start_date && !$this->discount_end_date) {
-            return true;
-        }
-
+        // If start date is set and is in future, not active
         if ($this->discount_start_date && $this->discount_start_date->isFuture()) {
             return false;
         }
 
+        // If end date is set and is past, not active
         if ($this->discount_end_date && $this->discount_end_date->isPast()) {
             return false;
         }
@@ -94,10 +105,48 @@ class Product extends Model
      */
     public function getCurrentPriceAttribute()
     {
-        if ($this->is_discount_active) {
-            return round($this->price * (1 - ($this->discount_percent / 100)), 2);
+        if (!$this->is_discount_active) {
+            return $this->price;
         }
-        return $this->price;
+
+        if ($this->discount_type === 'flat' && $this->discount_value > 0) {
+            return max(0, round($this->price - $this->discount_value, 2));
+        }
+
+        // Use discount_value as percentage if type is percentage and value > 0
+        $percent = ($this->discount_type === 'percentage' && $this->discount_value > 0) 
+            ? $this->discount_value 
+            : $this->discount_percent;
+
+        return round($this->price * (1 - ($percent / 100)), 2);
+    }
+
+    /**
+     * Human-friendly discount label (e.g. "20% OFF" or "₹500 OFF")
+     */
+    public function getDiscountLabelAttribute()
+    {
+        if (!$this->is_discount_active) {
+            return null;
+        }
+
+        if ($this->discount_type === 'flat' && $this->discount_value > 0) {
+            return "₹" . number_format((float) $this->discount_value) . " OFF";
+        }
+
+        $percent = ($this->discount_type === 'percentage' && $this->discount_value > 0) 
+            ? $this->discount_value 
+            : $this->discount_percent;
+
+        return round($percent) . "% OFF";
+    }
+
+    /**
+     * Amount saved
+     */
+    public function getSavingsAmountAttribute()
+    {
+        return round($this->price - $this->current_price, 2);
     }
 
     public function getImageUrlAttribute()

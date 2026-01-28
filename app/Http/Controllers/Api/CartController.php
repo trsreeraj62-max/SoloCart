@@ -42,28 +42,9 @@ class CartController extends ApiController
 
                 $product = $item->product;
                 
-                // Use the model's smart accessor if available, or replicate logic
-                $originalPrice = $product->price;
-                
-                // Effective Price Calculation (respecting dates)
-                $isActiveDiscount = false;
-                if ($product->discount_percent > 0) {
-                     $now = now();
-                     $start = $product->discount_start_date;
-                     $end = $product->discount_end_date;
-                     
-                     // Check dates: Null means "always active", otherwise check range
-                     $startValid = !$start || $start->isPast();
-                     $endValid = !$end || $end->isFuture();
-                     
-                     if ($startValid && $endValid) {
-                         $isActiveDiscount = true;
-                     }
-                }
-                
-                $finalPrice = $isActiveDiscount 
-                    ? round($originalPrice * (1 - ($product->discount_percent / 100)), 2)
-                    : $originalPrice;
+                $originalPrice = (float) $product->price;
+                $finalPrice = (float) $product->current_price;
+                $isActiveDiscount = $product->is_discount_active;
 
                 $qty = $item->quantity;
                 $lineTotal = $finalPrice * $qty;
@@ -80,6 +61,7 @@ class CartController extends ApiController
                     'price' => $finalPrice,
                     'original_price' => $originalPrice,
                     'discount_percent' => $isActiveDiscount ? $product->discount_percent : 0,
+                    'discount_label' => $product->discount_label,
                     'quantity' => $qty,
                     'line_total' => $lineTotal
                 ];
