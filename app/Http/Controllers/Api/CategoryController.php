@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class CategoryController extends ApiController
 {
@@ -14,18 +16,26 @@ class CategoryController extends ApiController
     {
         try {
             // Select only necessary columns
-            $query = Category::select('id', 'name', 'slug', 'image');
-            
-            // Filter by status if column exists
-            if (\Illuminate\Support\Facades\Schema::hasColumn('categories', 'status')) {
-                $query->where('status', 1);
-            }
-            
-            $categories = $query->get();
-            return $this->success($categories, "Categories retrieved");
+            // Using a more robust query approach
+            $categories = Category::query()
+                ->select(['id', 'name', 'slug', 'image'])
+                ->when(Schema::hasColumn('categories', 'status'), function($q) {
+                    return $q->where('status', 1);
+                })
+                ->orderBy('name')
+                ->get();
+                
+            Log::info('Categories retrieved successfully.', ['count' => $categories->count()]);
+            return $this->success($categories, "Categories retrieved successfully.");
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Category Index Error: ' . $e->getMessage());
-            return $this->error("Failed to retrieve categories: " . $e->getMessage(), 500);
+            Log::error('Category Index Error: Failed to retrieve categories.', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return $this->error("Failed to retrieve categories due to an internal server error. Please try again later.", 500);
         }
     }
 }
