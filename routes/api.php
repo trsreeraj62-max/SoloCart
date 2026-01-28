@@ -18,7 +18,8 @@ use App\Http\Controllers\Api\{
     AdminDiscountController,
     AdminContactController,
     AdminOrderController,
-    ProfileController
+    ProfileController,
+    HomeController
 };
 
 /*
@@ -50,21 +51,8 @@ Route::get('/test-email', function() {
     }
 });
 
-Route::get('/home-data', function() {
-    $products = \App\Models\Product::with(['category', 'images'])->active()->get();
-    
-    return response()->json([
-        'success' => true,
-        'message' => 'Home data retrieved',
-        'data' => [
-            'banners' => \App\Models\Banner::all(),
-            'categories' => \App\Models\Category::all(),
-            'products' => $products->take(20), // General pool
-            'featured_products' => $products->shuffle()->take(8),
-            'latest_products' => $products->sortByDesc('created_at')->take(8),
-        ]
-    ]);
-});
+Route::get('/health-check', [HomeController::class, 'healthCheck']);
+Route::get('/home-data', [HomeController::class, 'index']);
 
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
@@ -92,11 +80,12 @@ Route::get('/system/maintenance', function() {
         }
     }
 
-    // 2. Clear Cache
+    // 2. Clear & Refresh Cache (Performance Boost)
     if (request()->has('optimize')) {
         try {
             \Illuminate\Support\Facades\Artisan::call('optimize:clear');
-            $output['optimization'] = \Illuminate\Support\Facades\Artisan::output();
+            \Illuminate\Support\Facades\Artisan::call('optimize');
+            $output['optimization'] = "Cache cleared and optimized successfully.";
         } catch (\Exception $e) {
             $output['optimization_error'] = $e->getMessage();
         }

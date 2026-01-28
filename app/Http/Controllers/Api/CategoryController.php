@@ -13,8 +13,15 @@ class CategoryController extends ApiController
     public function index()
     {
         try {
-            // Select only necessary columns to avoid overhead
-            $categories = Category::select('id', 'name', 'slug', 'image')->get();
+            // Select only necessary columns
+            $query = Category::select('id', 'name', 'slug', 'image');
+            
+            // Filter by status if column exists
+            if (\Illuminate\Support\Facades\Schema::hasColumn('categories', 'status')) {
+                $query->where('status', 1);
+            }
+            
+            $categories = $query->get();
             return $this->success($categories, "Categories retrieved");
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Category Index Error: ' . $e->getMessage());
