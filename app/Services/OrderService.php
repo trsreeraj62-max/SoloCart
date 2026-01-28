@@ -82,16 +82,20 @@ class OrderService
             ]);
         }
 
-        // If created from cart, clear it
+        if ($order->payment_method === 'cod') {
+            $order->update(['status' => 'approved']);
+            try {
+                $this->sendNotification($order, 'confirmation');
+            } catch (\Exception $e) {
+                Log::warning('OrderService: Confirmation email failed', ['error' => $e->getMessage()]);
+            }
+            Log::info('OrderService: COD order auto-approved', ['order_id' => $order->id]);
+        }
+
+        // 4. Finally, clear cart if requested
         if (isset($data['clear_cart']) && $data['clear_cart']) {
             $user->cart?->items()->delete();
             Log::info('OrderService: Cart cleared', ['user_id' => $user->id]);
-        }
-
-        if ($order->payment_method === 'cod') {
-            $order->update(['status' => 'approved']);
-            $this->sendNotification($order, 'confirmation');
-            Log::info('OrderService: COD order auto-approved', ['order_id' => $order->id]);
         }
 
         Log::info('OrderService: Order creation completed', ['order_id' => $order->id]);

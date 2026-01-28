@@ -115,13 +115,15 @@ class CheckoutController extends ApiController
 
         try {
             $user = Auth::user();
+            $cart = $user->cart()->with('items.product')->first();
+
             \Illuminate\Support\Facades\Log::info('CheckoutController: Cart Checkout Started', [
                 'user_id' => $user->id,
-                'email' => $user->email
+                'email' => $user->email,
+                'cart_exists' => !!$cart,
+                'item_count' => $cart ? $cart->items->count() : 0
             ]);
             
-            $cart = $user->cart;
-
             if (!$cart || $cart->items->count() === 0) {
                 return $this->error("Your cart is empty");
             }
@@ -130,7 +132,12 @@ class CheckoutController extends ApiController
             $subtotal = 0;
 
             foreach ($cart->items as $item) {
-                $price = $item->product->price - ($item->product->price * ($item->product->discount_percent / 100));
+                if (!$item->product) {
+                    \Illuminate\Support\Facades\Log::warning("CheckoutController: Item missing product", ['item_id' => $item->id]);
+                    continue;
+                }
+
+                $price = (float) $item->product->current_price;
                 $itemsData[] = [
                     'product_id' => $item->product_id,
                     'quantity' => $item->quantity,
@@ -138,11 +145,16 @@ class CheckoutController extends ApiController
                 ];
                 $subtotal += $price * $item->quantity;
                 
-                \Illuminate\Support\Facades\Log::info('CheckoutController: Cart Item', [
+                \Illuminate\Support\Facades\Log::info('CheckoutController: Processing Cart Item', [
                     'product_id' => $item->product_id,
                     'name' => $item->product->name,
-                    'qty' => $item->quantity
+                    'qty' => $item->quantity,
+                    'price' => $price
                 ]);
+            }
+
+            if (empty($itemsData)) {
+                return $this->error("Your cart items are invalid or unavailable.");
             }
 
             $order = $this->orderService->createOrder($user, [

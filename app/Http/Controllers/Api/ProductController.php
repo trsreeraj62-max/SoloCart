@@ -79,39 +79,41 @@ class ProductController extends ApiController
      */
     public function show($id)
     {
-        // 1. Resolve Product by ID or Slug
-        $query = Product::with(['category', 'images']);
+        return \Illuminate\Support\Facades\Cache::remember("product_details_{$id}", 30, function () use ($id) {
+            // 1. Resolve Product by ID or Slug
+            $query = Product::with(['category', 'images']);
 
-        if (is_numeric($id)) {
-            $product = $query->find($id);
-        } else {
-            $product = $query->where('slug', $id)->first();
-            
-            // Fallback: Attempt to extract ID from slug (e.g. "product-name-123")
-            if (!$product && preg_match('/-(\d+)$/', $id, $matches)) {
-                 $product = $query->find($matches[1]);
+            if (is_numeric($id)) {
+                $product = $query->find($id);
+            } else {
+                $product = $query->where('slug', $id)->first();
+                
+                // Fallback: Attempt to extract ID from slug
+                if (!$product && preg_match('/-(\d+)$/', $id, $matches)) {
+                    $product = $query->find($matches[1]);
+                }
             }
-        }
 
-        if (!$product) {
-            return $this->error("Product not found", 404);
-        }
+            if (!$product) {
+                return $this->error("Product not found", 404);
+            }
 
-        // 2. Fetch Related Products (same category)
-        $related = Product::where('category_id', $product->category_id)
-            ->where('id', '!=', $product->id)
-            ->active()
-            ->inRandomOrder()
-            ->take(4)
-            ->get();
+            // 2. Fetch Related Products (same category) - Optimized (No random order)
+            $related = Product::where('category_id', $product->category_id)
+                ->where('id', '!=', $product->id)
+                ->active()
+                ->latest() // Faster than random order
+                ->take(4)
+                ->get();
 
-        // 3. Return Optimized Response (Flat structure for frontend compatibility)
-        return response()->json([
-            'success' => true,
-            'message' => "Product details retrieved",
-            'product' => $product,
-            'related_products' => $related
-        ]);
+            // 3. Return Response
+            return response()->json([
+                'success' => true,
+                'message' => "Product details retrieved",
+                'product' => $product,
+                'related_products' => $related
+            ]);
+        });
     }
 
     /**
