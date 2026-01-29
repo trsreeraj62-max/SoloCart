@@ -27,7 +27,24 @@ class Banner extends Model
         'end_at' => 'datetime',
     ];
 
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'status', 'is_scheduled_active'];
+
+    public function getStatusAttribute()
+    {
+        if (!$this->is_active) return 'disabled';
+        
+        $now = now();
+        if ($this->start_at > $now) return 'scheduled';
+        if ($this->end_at < $now) return 'expired';
+        
+        return 'active';
+    }
+
+    public function getIsScheduledActiveAttribute()
+    {
+        $now = now();
+        return $this->is_active && $this->start_at <= $now && $this->end_at >= $now;
+    }
 
     /**
      * Scope for active banners
