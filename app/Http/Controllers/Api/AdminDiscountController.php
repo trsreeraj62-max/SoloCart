@@ -46,6 +46,8 @@ class AdminDiscountController extends ApiController
             \Illuminate\Support\Facades\Cache::forget('home_data');
 
             return $this->success([], "Discount applied to category successfully with timing.");
+        } catch (\Illuminate\Validation\ValidationException $v) {
+            return $this->error("Validation failed", 422, $v->errors());
         } catch (\Exception $e) {
             Log::error('Apply Category Discount Error: ' . $e->getMessage());
             return $this->error("Failed to apply category discount: " . $e->getMessage(), 500);
@@ -73,6 +75,8 @@ class AdminDiscountController extends ApiController
             \Illuminate\Support\Facades\Cache::forget('home_data');
 
             return $this->success([], "Global discount applied successfully with timing.");
+        } catch (\Illuminate\Validation\ValidationException $v) {
+            return $this->error("Validation failed", 422, $v->errors());
         } catch (\Exception $e) {
             Log::error('Apply Global Discount Error: ' . $e->getMessage());
             return $this->error("Failed to apply global discount: " . $e->getMessage(), 500);
