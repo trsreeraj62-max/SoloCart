@@ -9,7 +9,12 @@ class Category extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'image'];
+    protected $fillable = ['name', 'slug', 'image', 'discount_percent', 'discount_start_date', 'discount_end_date'];
+
+    protected $casts = [
+        'discount_start_date' => 'datetime',
+        'discount_end_date' => 'datetime',
+    ];
 
     protected $appends = ['image_url'];
 

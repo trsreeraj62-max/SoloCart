@@ -79,9 +79,34 @@ class AdminProductController extends ApiController
             // Default to true if not provided (though DB defaults to true)
             $productData['is_active'] = $request->has('is_active') ? $request->is_active : true;
             
-            // Handle null discount_percent by defaulting to 0 if not present
-            if (!isset($productData['discount_percent'])) {
-                $productData['discount_percent'] = 0;
+            // INHERIT CATEGORY DISCOUNT LOGIC (If no specific discount provided)
+            if (!isset($productData['discount_percent']) || $productData['discount_percent'] == 0) {
+                $category = \App\Models\Category::find($request->category_id);
+                $now = now();
+                $hasCatDiscount = $category && $category->discount_percent > 0 && 
+                                 (!$category->discount_start_date || $category->discount_start_date <= $now) &&
+                                 (!$category->discount_end_date || $category->discount_end_date >= $now);
+
+                if ($hasCatDiscount) {
+                    $productData['discount_percent'] = $category->discount_percent;
+                    $productData['discount_start_date'] = $category->discount_start_date;
+                    $productData['discount_end_date'] = $category->discount_end_date;
+                    $productData['discount_type'] = 'percentage';
+                } else {
+                    $productData['discount_percent'] = 0;
+                }
+            }
+
+            // ADMIN GIVING IS THE CORRECT (FINAL) PRICE
+            // If any discount is active for this new product, we back-calculate the base price
+            // so that: price * (1 - disc/100) = admin_price
+            if (isset($productData['discount_percent']) && $productData['discount_percent'] > 0) {
+                $adminPrice = (float) $productData['price'];
+                $discountFactor = 1 - ($productData['discount_percent'] / 100);
+                if ($discountFactor > 0) {
+                    $productData['price'] = round($adminPrice / $discountFactor, 2);
+                    Log::info("Admin Product Store: Back-calculated base price for {$productData['name']} from {$adminPrice} to {$productData['price']} due to {$productData['discount_percent']}% discount.");
+                }
             }
             
             $product = Product::create($productData);
@@ -99,6 +124,9 @@ class AdminProductController extends ApiController
 
             // Reload to include images
             $product->load('images', 'category');
+
+            // Clear home cache for immediate updates
+            \Illuminate\Support\Facades\Cache::forget('home_data');
 
             return $this->success($product, 'Product created successfully', 201);
 
@@ -186,6 +214,9 @@ class AdminProductController extends ApiController
 
             $product->load('images', 'category');
 
+            // Clear home cache for immediate updates
+            \Illuminate\Support\Facades\Cache::forget('home_data');
+
             return $this->success($product, 'Product updated successfully');
 
         } catch (ValidationException $e) {
@@ -215,6 +246,9 @@ class AdminProductController extends ApiController
             $product->images()->delete();
 
             $product->delete();
+
+            // Clear home cache for immediate updates
+            \Illuminate\Support\Facades\Cache::forget('home_data');
 
             return $this->success(null, 'Product deleted successfully');
         } catch (\Exception $e) {

@@ -28,16 +28,27 @@ class AdminDiscountController extends ApiController
         try {
             $request->validate([
                 'category_id' => 'required|exists:categories,id',
-                'discount_percent' => 'required|integer|min:0|max:100'
+                'discount_percent' => 'required|integer|min:0|max:100',
+                'discount_start_date' => 'nullable|date',
+                'discount_end_date' => 'nullable|date|after_or_equal:discount_start_date'
             ]);
 
             Product::where('category_id', $request->category_id)->update([
                 'discount_percent' => $request->discount_percent,
-                'discount_start_date' => now(),
-                'discount_end_date' => null // Permanent until changed
+                'discount_start_date' => $request->discount_start_date ?? now(),
+                'discount_end_date' => $request->discount_end_date
             ]);
 
-            return $this->success([], "Discount of {$request->discount_percent}% applied to category");
+            // Track discount on the category model as well
+            \App\Models\Category::where('id', $request->category_id)->update([
+                'discount_percent' => $request->discount_percent,
+                'discount_start_date' => $request->discount_start_date ?? now(),
+                'discount_end_date' => $request->discount_end_date
+            ]);
+
+            \Illuminate\Support\Facades\Cache::forget('home_data');
+
+            return $this->success([], "Discount applied to category successfully with timing.");
         } catch (\Exception $e) {
             Log::error('Apply Category Discount Error: ' . $e->getMessage());
             return $this->error("Failed to apply category discount: " . $e->getMessage(), 500);
@@ -51,16 +62,20 @@ class AdminDiscountController extends ApiController
     {
         try {
             $request->validate([
-                'discount_percent' => 'required|integer|min:0|max:100'
+                'discount_percent' => 'required|integer|min:0|max:100',
+                'discount_start_date' => 'nullable|date',
+                'discount_end_date' => 'nullable|date|after_or_equal:discount_start_date'
             ]);
 
             Product::query()->update([
                 'discount_percent' => $request->discount_percent,
-                'discount_start_date' => now(),
-                'discount_end_date' => null
+                'discount_start_date' => $request->discount_start_date ?? now(),
+                'discount_end_date' => $request->discount_end_date
             ]);
 
-            return $this->success([], "Global discount of {$request->discount_percent}% applied to all products");
+            \Illuminate\Support\Facades\Cache::forget('home_data');
+
+            return $this->success([], "Global discount applied successfully with timing.");
         } catch (\Exception $e) {
             Log::error('Apply Global Discount Error: ' . $e->getMessage());
             return $this->error("Failed to apply global discount: " . $e->getMessage(), 500);
@@ -85,6 +100,22 @@ class AdminDiscountController extends ApiController
                 'discount_start_date' => null,
                 'discount_end_date' => null
             ]);
+
+            if ($request->filled('category_id')) {
+                \App\Models\Category::where('id', $request->category_id)->update([
+                    'discount_percent' => 0,
+                    'discount_start_date' => null,
+                    'discount_end_date' => null
+                ]);
+            } else {
+                \App\Models\Category::query()->update([
+                    'discount_percent' => 0,
+                    'discount_start_date' => null,
+                    'discount_end_date' => null
+                ]);
+            }
+
+            \Illuminate\Support\Facades\Cache::forget('home_data');
 
             return $this->success([], "Discounts removed successfully");
         } catch (\Exception $e) {

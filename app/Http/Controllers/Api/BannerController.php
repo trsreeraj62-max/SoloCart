@@ -70,6 +70,8 @@ class BannerController extends ApiController
 
             $banner = Banner::create($data);
 
+            \Illuminate\Support\Facades\Cache::forget('home_data');
+
             return $this->success($banner, "Banner created successfully", 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->error("Validation failed", 422, $e->errors());
@@ -127,6 +129,8 @@ class BannerController extends ApiController
 
             $banner->update($validated);
 
+            \Illuminate\Support\Facades\Cache::forget('home_data');
+
             return $this->success($banner, "Banner updated successfully");
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->error("Validation failed", 422, $e->errors());
@@ -149,6 +153,8 @@ class BannerController extends ApiController
             }
 
             $banner->delete();
+
+            \Illuminate\Support\Facades\Cache::forget('home_data');
 
             return $this->success([], "Banner deleted successfully");
         } catch (\Exception $e) {

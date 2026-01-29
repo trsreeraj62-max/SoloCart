@@ -46,6 +46,8 @@ class AdminCategoryController extends ApiController
 
             $category = Category::create($data);
 
+            \Illuminate\Support\Facades\Cache::forget('home_data');
+
             return $this->success($category, "Category created successfully", 201);
 
         } catch (ValidationException $e) {
@@ -90,6 +92,8 @@ class AdminCategoryController extends ApiController
 
             $category->update($data);
 
+            \Illuminate\Support\Facades\Cache::forget('home_data');
+
             return $this->success($category, "Category updated successfully");
 
         } catch (ValidationException $e) {
@@ -122,6 +126,8 @@ class AdminCategoryController extends ApiController
             }
 
             $category->delete();
+
+            \Illuminate\Support\Facades\Cache::forget('home_data');
 
             return $this->success(null, "Category deleted successfully");
         } catch (\Exception $e) {
