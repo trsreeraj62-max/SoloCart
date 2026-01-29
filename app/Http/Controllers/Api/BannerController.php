@@ -50,8 +50,8 @@ class BannerController extends ApiController
                 'image' => 'required|image|max:5120', // Max 5MB
                 'link' => 'nullable|url',
                 'type' => 'in:hero,carousel',
-                'start_date' => 'nullable|date',
-                'end_date' => 'nullable|date|after_or_equal:start_date',
+                'start_at' => 'required|date',
+                'end_at' => 'required|date|after:start_at',
                 'is_active' => 'boolean'
             ]);
 
@@ -59,8 +59,8 @@ class BannerController extends ApiController
                 'title' => $validated['title'] ?? null,
                 'link' => $validated['link'] ?? null,
                 'type' => $validated['type'] ?? 'hero',
-                'start_date' => $validated['start_date'] ?? null,
-                'end_date' => $validated['end_date'] ?? null,
+                'start_at' => $validated['start_at'],
+                'end_at' => $validated['end_at'],
                 'is_active' => $request->has('is_active') ? $validated['is_active'] : true
             ];
 
@@ -98,8 +98,8 @@ class BannerController extends ApiController
                 'title' => 'sometimes|string|max:255',
                 'subtitle' => 'nullable|string|max:255',
                 'link' => 'nullable|url',
-                'start_date' => 'nullable|date',
-                'end_date' => 'nullable|date|after_or_equal:start_date',
+                'start_at' => 'sometimes|date',
+                'end_at' => 'sometimes|date|after:start_at',
                 'is_active' => 'boolean'
             ];
 

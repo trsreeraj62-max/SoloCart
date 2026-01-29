@@ -42,8 +42,13 @@ class HomeController extends Controller
     {
         return response()->json([
             'status' => 'ok',
-            'timestamp' => now(),
-            'service' => 'SoloCart Backend'
+            'timestamp' => now()->toDateTimeString(),
+            'timezone' => config('app.timezone'),
+            'service' => 'SoloCart Backend',
+            'debug' => [
+                'carbon_now' => \Carbon\Carbon::now()->toDateTimeString(),
+                'db_now' => \Illuminate\Support\Facades\DB::select('select now() as now')[0]->now ?? 'N/A'
+            ]
         ]);
     }
 }

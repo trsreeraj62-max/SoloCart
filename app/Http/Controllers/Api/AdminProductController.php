@@ -57,8 +57,8 @@ class AdminProductController extends ApiController
                 'specifications' => 'nullable|string',
                 'is_active' => 'boolean',
                 'discount_percent' => 'nullable|integer|min:0|max:100',
-                'discount_start_date' => 'nullable|date',
-                'discount_end_date' => 'nullable|date|after_or_equal:discount_start_date',
+                'start_at' => 'nullable|date',
+                'end_at' => 'nullable|date|after_or_equal:start_at',
             ]);
 
             // Create Product
@@ -70,8 +70,8 @@ class AdminProductController extends ApiController
                 'category_id', 
                 'specifications',
                 'discount_percent',
-                'discount_start_date',
-                'discount_end_date'
+                'start_at',
+                'end_at'
             ]);
             
             $productData['slug'] = \Illuminate\Support\Str::slug($request->name) . '-' . uniqid();
@@ -84,13 +84,13 @@ class AdminProductController extends ApiController
                 $category = \App\Models\Category::find($request->category_id);
                 $now = now();
                 $hasCatDiscount = $category && $category->discount_percent > 0 && 
-                                 (!$category->discount_start_date || $category->discount_start_date <= $now) &&
-                                 (!$category->discount_end_date || $category->discount_end_date >= $now);
+                                 ($category->start_at && $category->start_at <= $now) &&
+                                 ($category->end_at && $category->end_at >= $now);
 
                 if ($hasCatDiscount) {
                     $productData['discount_percent'] = $category->discount_percent;
-                    $productData['discount_start_date'] = $category->discount_start_date;
-                    $productData['discount_end_date'] = $category->discount_end_date;
+                    $productData['start_at'] = $category->start_at;
+                    $productData['end_at'] = $category->end_at;
                     $productData['discount_type'] = 'percentage';
                 } else {
                     $productData['discount_percent'] = 0;
@@ -176,8 +176,8 @@ class AdminProductController extends ApiController
                 'category_id' => 'exists:categories,id',
                 'is_active' => 'boolean',
                 'discount_percent' => 'nullable|integer|min:0|max:100',
-                'discount_start_date' => 'nullable|date',
-                'discount_end_date' => 'nullable|date|after_or_equal:discount_start_date',
+                'start_at' => 'nullable|date',
+                'end_at' => 'nullable|date|after_or_equal:start_at',
             ];
 
             if ($request->hasFile('image')) {

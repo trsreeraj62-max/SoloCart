@@ -87,8 +87,8 @@ class AdminWebController extends Controller
                 'description' => 'nullable',
                 'image' => 'nullable|image',
                 'discount_percent' => 'nullable|integer|min:0|max:100',
-                'discount_start_date' => 'nullable|date',
-                'discount_end_date' => 'nullable|date|after_or_equal:discount_start_date',
+                'start_at' => 'nullable|date',
+                'end_at' => 'nullable|date|after_or_equal:start_at',
                 'specifications' => 'nullable|string'
             ]);
 
@@ -269,8 +269,8 @@ class AdminWebController extends Controller
                 'title' => 'required',
                 'image' => 'required|image',
                 'type' => 'required|in:hero,promo',
-                'start_date' => 'nullable|date',
-                'end_date' => 'nullable|date|after_or_equal:start_date'
+                'start_at' => 'nullable|date',
+                'end_at' => 'nullable|date|after_or_equal:start_at'
             ]);
 
             $path = $request->file('image')->store('banners', 'public');
@@ -279,8 +279,8 @@ class AdminWebController extends Controller
                 'title' => $request->title,
                 'image_path' => $path,
                 'type' => $request->type,
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date
+                'start_at' => $request->start_at,
+                'end_at' => $request->end_at
             ]);
 
             return back()->with('success', 'Banner created.');
@@ -296,8 +296,8 @@ class AdminWebController extends Controller
              $request->validate([
                 'title' => 'required',
                 'type' => 'required|in:hero,promo',
-                'start_date' => 'nullable|date',
-                'end_date' => 'nullable|date|after_or_equal:start_date'
+                'start_at' => 'nullable|date',
+                'end_at' => 'nullable|date|after_or_equal:start_at'
             ]);
             
             $data = $request->except(['image', '_token', '_method']);
@@ -335,8 +335,8 @@ class AdminWebController extends Controller
              // I'll update the columns on all products.
              Product::query()->update([
                  'discount_percent' => $request->discount_percent,
-                 'discount_start_date' => now(), // Assume immediate
-                 'discount_end_date' => null // Indefinite? Or add fields to form
+                 'start_at' => now(), // Assume immediate
+                 'end_at' => now()->addYears(1) // Indefinite
              ]);
              return back()->with('success', 'Global discount updated.');
         } catch (\Exception $e) {
@@ -354,8 +354,8 @@ class AdminWebController extends Controller
             
             Product::where('category_id', $request->category_id)->update([
                 'discount_percent' => $request->discount_percent,
-                 'discount_start_date' => now(),
-                 'discount_end_date' => null
+                 'start_at' => now(),
+                 'end_at' => now()->addYears(1)
             ]);
             return back()->with('success', 'Category discount updated.');
         } catch (\Exception $e) {

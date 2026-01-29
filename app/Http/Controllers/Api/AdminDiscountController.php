@@ -20,30 +20,27 @@ class AdminDiscountController extends ApiController
         return $this->applyToAll($request);
     }
 
-    /**
-     * Apply discount to a specific category
-     */
     public function applyToCategory(Request $request)
     {
         try {
             $request->validate([
                 'category_id' => 'required|exists:categories,id',
                 'discount_percent' => 'required|integer|min:0|max:100',
-                'discount_start_date' => 'nullable|date',
-                'discount_end_date' => 'nullable|date|after_or_equal:discount_start_date'
+                'start_at' => 'required|date',
+                'end_at' => 'required|date|after:start_at'
             ]);
 
             Product::where('category_id', $request->category_id)->update([
                 'discount_percent' => $request->discount_percent,
-                'discount_start_date' => $request->discount_start_date ?? now(),
-                'discount_end_date' => $request->discount_end_date
+                'start_at' => $request->start_at,
+                'end_at' => $request->end_at
             ]);
 
             // Track discount on the category model as well
             \App\Models\Category::where('id', $request->category_id)->update([
                 'discount_percent' => $request->discount_percent,
-                'discount_start_date' => $request->discount_start_date ?? now(),
-                'discount_end_date' => $request->discount_end_date
+                'start_at' => $request->start_at,
+                'end_at' => $request->end_at
             ]);
 
             \Illuminate\Support\Facades\Cache::forget('home_data');
@@ -63,14 +60,14 @@ class AdminDiscountController extends ApiController
         try {
             $request->validate([
                 'discount_percent' => 'required|integer|min:0|max:100',
-                'discount_start_date' => 'nullable|date',
-                'discount_end_date' => 'nullable|date|after_or_equal:discount_start_date'
+                'start_at' => 'required|date',
+                'end_at' => 'required|date|after:start_at'
             ]);
 
             Product::query()->update([
                 'discount_percent' => $request->discount_percent,
-                'discount_start_date' => $request->discount_start_date ?? now(),
-                'discount_end_date' => $request->discount_end_date
+                'start_at' => $request->start_at,
+                'end_at' => $request->end_at
             ]);
 
             \Illuminate\Support\Facades\Cache::forget('home_data');
@@ -97,21 +94,21 @@ class AdminDiscountController extends ApiController
 
             $query->update([
                 'discount_percent' => 0,
-                'discount_start_date' => null,
-                'discount_end_date' => null
+                'start_at' => null,
+                'end_at' => null
             ]);
 
             if ($request->filled('category_id')) {
                 \App\Models\Category::where('id', $request->category_id)->update([
                     'discount_percent' => 0,
-                    'discount_start_date' => null,
-                    'discount_end_date' => null
+                    'start_at' => null,
+                    'end_at' => null
                 ]);
             } else {
                 \App\Models\Category::query()->update([
                     'discount_percent' => 0,
-                    'discount_start_date' => null,
-                    'discount_end_date' => null
+                    'start_at' => null,
+                    'end_at' => null
                 ]);
             }
 

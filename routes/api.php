@@ -447,6 +447,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('/discounts/category', [AdminDiscountController::class, 'applyToCategory']);
     Route::post('/discounts/all', [AdminDiscountController::class, 'applyToAll']);
     Route::post('/discounts/remove', [AdminDiscountController::class, 'removeDiscount']);
+    Route::delete('/discounts/remove', [AdminDiscountController::class, 'removeDiscount']);
 
     // Contact Messages
     // Contact Messages

@@ -9,14 +9,41 @@ class Category extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'image', 'discount_percent', 'discount_start_date', 'discount_end_date'];
+    protected $fillable = ['name', 'slug', 'image', 'discount_percent', 'start_at', 'end_at'];
 
     protected $casts = [
-        'discount_start_date' => 'datetime',
-        'discount_end_date' => 'datetime',
+        'start_at' => 'datetime',
+        'end_at' => 'datetime',
     ];
 
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'active_discount'];
+
+    /**
+     * Scope for active discounts
+     * Logic: start_at <= now() AND end_at >= now()
+     */
+    public function scopeActiveDiscount($query)
+    {
+        $now = now();
+        return $query->where('discount_percent', '>', 0)
+                     ->where('start_at', '<=', $now)
+                     ->where('end_at', '>=', $now);
+    }
+
+    public function getActiveDiscountAttribute()
+    {
+        $now = now();
+        if ($this->discount_percent > 0 && 
+            $this->start_at && $this->start_at <= $now && 
+            $this->end_at && $this->end_at >= $now) {
+            return [
+                'percent' => $this->discount_percent,
+                'start_at' => $this->start_at,
+                'end_at' => $this->end_at
+            ];
+        }
+        return null;
+    }
 
     public function products()
     {

@@ -16,33 +16,29 @@ class Banner extends Model
         'subtitle',
         'link', 
         'type', 
-        'start_date', 
-        'end_date',
+        'start_at', 
+        'end_at',
         'is_active'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'start_date' => 'datetime',
-        'end_date' => 'datetime',
+        'start_at' => 'datetime',
+        'end_at' => 'datetime',
     ];
 
     protected $appends = ['image_url'];
 
     /**
      * Scope for active banners
-     * Checks is_active AND date range if set
+     * Logic: start_at <= now() AND end_at >= now()
      */
     public function scopeActive($query)
     {
         $now = now();
         return $query->where('is_active', true)
-                     ->where(function($q) use ($now) {
-                         $q->whereNull('start_date')->orWhere('start_date', '<=', $now);
-                     })
-                     ->where(function($q) use ($now) {
-                         $q->whereNull('end_date')->orWhere('end_date', '>=', $now);
-                     });
+                     ->where('start_at', '<=', $now)
+                     ->where('end_at', '>=', $now);
     }
 
     public function getImageUrlAttribute()

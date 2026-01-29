@@ -17,8 +17,8 @@ class DiscountController extends ApiController
 
         Product::query()->update([
             'discount_percent' => $request->discount_percent,
-            'discount_start_date' => now(),
-            'discount_end_date' => null
+            'start_at' => now(),
+            'end_at' => now()->addYears(1)
         ]);
 
         return $this->success([], "Global discount applied to all products");
@@ -36,8 +36,8 @@ class DiscountController extends ApiController
 
         Product::where('category_id', $request->category_id)->update([
             'discount_percent' => $request->discount_percent,
-            'discount_start_date' => now(),
-            'discount_end_date' => null
+            'start_at' => now(),
+            'end_at' => now()->addYears(1)
         ]);
 
         return $this->success([], "Category discount applied");

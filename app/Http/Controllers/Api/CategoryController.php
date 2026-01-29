@@ -18,7 +18,7 @@ class CategoryController extends ApiController
             // Select only necessary columns
             // Using a more robust query approach
             $categories = Category::query()
-                ->select(['id', 'name', 'slug', 'image'])
+                ->select(['id', 'name', 'slug', 'image', 'discount_percent', 'start_at', 'end_at'])
                 ->when(Schema::hasColumn('categories', 'status'), function($q) {
                     return $q->where('status', 1);
                 })

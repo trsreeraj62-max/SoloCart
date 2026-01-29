@@ -19,8 +19,8 @@ class Product extends Model
         'discount_type',
         'discount_value',
         'discount_percent',
-        'discount_start_date',
-        'discount_end_date',
+        'start_at',
+        'end_at',
         'specifications',
         'is_active'
     ];
@@ -30,8 +30,8 @@ class Product extends Model
         'price' => 'decimal:2',
         'discount_value' => 'decimal:2',
         'discount_percent' => 'integer',
-        'discount_start_date' => 'datetime',
-        'discount_end_date' => 'datetime',
+        'start_at' => 'datetime',
+        'end_at' => 'datetime',
     ];
 
     protected $appends = [
@@ -87,13 +87,12 @@ class Product extends Model
 
         $now = now();
         
-        // If start date is set and is in future, not active
-        if ($this->discount_start_date && $this->discount_start_date->isFuture()) {
+        // Strictly follow: start_at <= now() AND end_at >= now()
+        if (!$this->start_at || $this->start_at > $now) {
             return false;
         }
 
-        // If end date is set and is past, not active
-        if ($this->discount_end_date && $this->discount_end_date->isPast()) {
+        if (!$this->end_at || $this->end_at < $now) {
             return false;
         }
 
