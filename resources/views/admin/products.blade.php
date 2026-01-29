@@ -196,11 +196,11 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-blue-700 mb-1">Start Date & Time</label>
-                        <input type="datetime-local" name="discount_start_date" class="w-full border border-blue-200 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="datetime-local" name="start_at" class="w-full border border-blue-200 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-blue-700 mb-1">End Date & Time</label>
-                        <input type="datetime-local" name="discount_end_date" class="w-full border border-blue-200 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="datetime-local" name="end_at" class="w-full border border-blue-200 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
                 </div>
             </div>
@@ -250,11 +250,11 @@
         form.querySelector('[name="discount_percent"]').value = product.discount_percent || '';
         
         // Date Formatting for datetime-local (YYYY-MM-DDTHH:MM)
-        if(product.discount_start_date) {
-            form.querySelector('[name="discount_start_date"]').value = product.discount_start_date.replace(' ', 'T').substring(0, 16);
+        if(product.start_at) {
+            form.querySelector('[name="start_at"]').value = product.start_at.replace(' ', 'T').substring(0, 16);
         }
-        if(product.discount_end_date) {
-             form.querySelector('[name="discount_end_date"]').value = product.discount_end_date.replace(' ', 'T').substring(0, 16);
+        if(product.end_at) {
+             form.querySelector('[name="end_at"]').value = product.end_at.replace(' ', 'T').substring(0, 16);
         }
     }
 

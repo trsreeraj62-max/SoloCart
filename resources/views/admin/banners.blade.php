@@ -43,8 +43,8 @@
                 <td class="p-4 font-bold text-slate-700">{{ $banner->title }}</td>
                 <td class="p-4"><span class="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded font-bold uppercase">{{ $banner->type }}</span></td>
                 <td class="p-4 text-xs text-slate-500">
-                    <div>Start: {{ $banner->start_date }}</div>
-                    <div>End: {{ $banner->end_date }}</div>
+                    <div>Start: {{ $banner->start_at }}</div>
+                    <div>End: {{ $banner->end_at }}</div>
                 </td>
                 <td class="p-4 text-right">
                     <div class="flex items-center justify-end gap-2">
@@ -96,11 +96,11 @@
             <div class="grid grid-cols-2 gap-4 mb-4">
                  <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Start Date & Time</label>
-                    <input type="datetime-local" name="start_date" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="datetime-local" name="start_at" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
                  </div>
                  <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">End Date & Time</label>
-                    <input type="datetime-local" name="end_date" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="datetime-local" name="end_at" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
                  </div>
             </div>
 
@@ -163,8 +163,8 @@
         form.querySelector('[name="title"]').value = banner.title;
         form.querySelector('[name="type"]').value = banner.type;
         
-        if(banner.start_date) form.querySelector('[name="start_date"]').value = banner.start_date.replace(' ', 'T').substring(0, 16);
-        if(banner.end_date) form.querySelector('[name="end_date"]').value = banner.end_date.replace(' ', 'T').substring(0, 16);
+        if(banner.start_at) form.querySelector('[name="start_at"]').value = banner.start_at.replace(' ', 'T').substring(0, 16);
+        if(banner.end_at) form.querySelector('[name="end_at"]').value = banner.end_at.replace(' ', 'T').substring(0, 16);
     }
 </script>
 @endsection
