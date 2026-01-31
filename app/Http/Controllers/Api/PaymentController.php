@@ -36,9 +36,9 @@ class PaymentController extends Controller
             'currency' => 'INR',
             'key' => env('RAZORPAY_KEY'),
             'user' => [
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone
+                'name' => $order->customer_name ?? $user->name,
+                'email' => $order->customer_email ?? $user->email,
+                'phone' => $order->customer_phone ?? $user->phone
             ]
         ]);
     }

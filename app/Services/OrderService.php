@@ -52,6 +52,9 @@ class OrderService
         
         $order = Order::create([
             'user_id' => $user->id,
+            'customer_name' => $data['customer_name'] ?? $user->name,
+            'customer_email' => $data['customer_email'] ?? $user->email,
+            'customer_phone' => $data['customer_phone'] ?? $user->phone,
             'status' => 'pending',
             'total' => $fees['grand_total'],
             'address' => $data['address'],

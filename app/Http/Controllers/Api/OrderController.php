@@ -112,6 +112,9 @@ class OrderController extends ApiController
             $order = $this->orderService->createOrder($user, [
                 'subtotal' => $subtotal,
                 'address' => $request->address,
+                'customer_name' => $request->full_name ?? $request->name,
+                'customer_email' => $request->email,
+                'customer_phone' => $request->phone,
                 'payment_method' => $request->payment_method,
                 'clear_cart' => $clearCart
             ], $itemsData);
