@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Razorpay Test Mode</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f4f7f6; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        button { background: #3399cc; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        button:hover { background: #287a9e; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Razorpay Test Payment</h2>
+    <p>SoloCart Integration Test</p>
+    <button onclick="payNow()">Pay ₹500</button>
+</div>
+
+<script>
+function payNow() {
+    // Using relative path so it works regardless of the domain
+    const apiBase = window.location.origin + '/api';
+
+    fetch(apiBase + '/razorpay/order', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ amount: 500 })
+    })
+    .then(res => res.json())
+    .then(order => {
+        if (!order.order_id) {
+            alert("Error creating order: " + JSON.stringify(order));
+            return;
+        }
+
+        var options = {
+            key: order.key,
+            amount: order.amount,
+            currency: "INR",
+            name: "SoloCart",
+            description: "Test Transaction",
+            order_id: order.order_id,
+            handler: function (response) {
+                fetch(apiBase + '/razorpay/verify', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(response)
+                })
+                .then(res => res.json())
+                .then(result => {
+                    alert(result.status + ": " + result.message);
+                });
+            },
+            prefill: {
+                name: "Test User",
+                email: "test@example.com",
+                contact: "9999999999"
+            },
+            theme: {
+                color: "#3399cc"
+            }
+        };
+
+        var rzp = new Razorpay(options);
+        rzp.open();
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Failed to initiate payment. Check console.");
+    });
+}
+</script>
+
+</body>
+</html>

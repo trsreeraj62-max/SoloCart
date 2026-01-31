@@ -19,7 +19,8 @@ use App\Http\Controllers\Api\{
     AdminContactController,
     AdminOrderController,
     ProfileController,
-    HomeController
+    HomeController,
+    PaymentController
 };
 
 /*
@@ -61,6 +62,10 @@ Route::get('/products/{id}/similar', [ProductController::class, 'similar']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/banners', [BannerController::class, 'index']);
 Route::post('/contact', [ContactController::class, 'store']);
+
+// Razorpay Payments
+Route::post('/razorpay/order', [PaymentController::class, 'createOrder']);
+Route::post('/razorpay/verify', [PaymentController::class, 'verifyPayment']);
 
 // Temporary route for Render free tier migration & admin fix
 Route::get('/system/maintenance', function() {
