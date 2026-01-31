@@ -63,10 +63,6 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/banners', [BannerController::class, 'index']);
 Route::post('/contact', [ContactController::class, 'store']);
 
-// Razorpay Payments
-Route::post('/razorpay/order', [PaymentController::class, 'createOrder']);
-Route::post('/razorpay/verify', [PaymentController::class, 'verifyPayment']);
-
 // Temporary route for Render free tier migration & admin fix
 Route::get('/system/maintenance', function() {
     if (request('key') !== 'render_fix_2026') {
@@ -402,6 +398,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel']);
     Route::post('/orders/{id}/return', [OrderController::class, 'returnOrder']);
     Route::get('/orders/{id}/invoice', [OrderController::class, 'downloadInvoice']);
+
+    // Razorpay Payments
+    Route::post('/razorpay/order', [PaymentController::class, 'createOrder']);
+    Route::post('/razorpay/verify', [PaymentController::class, 'verifyPayment']);
 });
 
 /*

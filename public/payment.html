@@ -13,62 +13,83 @@
 <body>
 
 <div class="card">
-    <h2>Razorpay Test Payment</h2>
-    <p>SoloCart Integration Test</p>
-    <button onclick="payNow()">Pay ₹500</button>
+    <h2>Razorpay Checkout Test</h2>
+    <p>Simulating Checkout for Order ID: <input type="number" id="local_order_id" placeholder="Enter Order ID" style="padding: 5px; width: 100px;"></p>
+    <p style="font-size: 12px; color: #666;">Note: Must be logged in (Sanctum Token required in headers if running outside browser session)</p>
+    <button onclick="payNow()">Proceed to Payment</button>
 </div>
 
 <script>
 function payNow() {
-    // Using relative path so it works regardless of the domain
-    const apiBase = window.location.origin + '/api';
+    const localOrderId = document.getElementById('local_order_id').value;
+    if(!localOrderId) {
+        alert("Please enter a valid local Order ID from your database.");
+        return;
+    }
 
+    const apiBase = window.location.origin + '/api';
+    
+    // In a real frontend, you'd have the token stored
+    const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+        // 'Authorization': 'Bearer ' + token // Add if testing with Postman/outside session
+    };
+
+    // 1. Create Razorpay Order via Backend
     fetch(apiBase + '/razorpay/order', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ amount: 500 })
+        headers: headers,
+        body: JSON.stringify({ order_id: localOrderId })
     })
     .then(res => res.json())
-    .then(order => {
-        if (!order.order_id) {
-            alert("Error creating order: " + JSON.stringify(order));
+    .then(data => {
+        if (data.error || !data.order_id) {
+            alert("Error: " + (data.message || JSON.stringify(data)));
             return;
         }
 
-        var options = {
-            key: order.key,
-            amount: order.amount,
-            currency: "INR",
+        const options = {
+            key: data.key,
+            amount: data.amount,
+            currency: data.currency,
             name: "SoloCart",
-            description: "Test Transaction",
-            order_id: order.order_id,
+            description: "Payment for Order #" + localOrderId,
+            order_id: data.order_id,
             handler: function (response) {
+                // 2. Verify Payment
                 fetch(apiBase + '/razorpay/verify', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(response)
+                    headers: headers,
+                    body: JSON.stringify({
+                        local_order_id: localOrderId,
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature
+                    })
                 })
                 .then(res => res.json())
                 .then(result => {
-                    alert(result.status + ": " + result.message);
+                    alert(result.status.toUpperCase() + ": " + result.message);
+                    if(result.status === 'success') {
+                        location.reload(); // Refresh to show new state if needed
+                    }
                 });
             },
             prefill: {
-                name: "Test User",
-                email: "test@example.com",
-                contact: "9999999999"
+                name: data.user.name,
+                email: data.user.email,
+                contact: data.user.phone
             },
-            theme: {
-                color: "#3399cc"
-            }
+            theme: { color: "#2874f0" }
         };
 
-        var rzp = new Razorpay(options);
+        const rzp = new Razorpay(options);
         rzp.open();
     })
     .catch(err => {
         console.error(err);
-        alert("Failed to initiate payment. Check console.");
+        alert("Request failed. Are you logged in?");
     });
 }
 </script>
