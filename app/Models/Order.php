@@ -51,4 +51,9 @@ class Order extends Model
     {
         return $this->hasOne(Payment::class);
     }
+
+    public function getOrderNumberAttribute()
+    {
+        return 'ORD-' . str_pad($this->id, 8, '0', STR_PAD_LEFT);
+    }
 }

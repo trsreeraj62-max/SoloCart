@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\RazorpayService;
 use App\Models\Order;
+use App\Services\BrevoMailService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
@@ -69,9 +71,24 @@ class PaymentController extends Controller
                 'status' => 'approved' // Set to approved so admin can process
             ]);
 
+            // 📧 Send Confirmation Email (New)
+            try {
+                $recipient = $order->user;
+                if (!$recipient) {
+                    // Create a dummy user object for guest if needed, 
+                    // or modify BrevoMailService to accept email/name directly.
+                    // For now, assume user exists as per current flow.
+                    Log::warning("Payment verified for Order #{$order->id} but no user associated for email.");
+                } else {
+                    BrevoMailService::sendOrderConfirmation($recipient, $order);
+                }
+            } catch (\Exception $mailEx) {
+                Log::error("Failed to send order confirmation email for Order #{$order->id}: " . $mailEx->getMessage());
+            }
+
             return response()->json([
                 'status' => 'success',
-                'message' => 'Payment verified successfully',
+                'message' => 'Payment verified successfully and confirmation email sent.',
                 'order' => $order
             ]);
         } catch (\Exception $e) {
