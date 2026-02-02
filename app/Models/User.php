@@ -48,6 +48,11 @@ class User extends Authenticatable
         return $this->hasOne(Cart::class);
     }
 
+    public function refreshTokens()
+    {
+        return $this->hasMany(RefreshToken::class);
+    }
+
     /**
      * Always store emails in lowercase to ensure uniqueness
      */

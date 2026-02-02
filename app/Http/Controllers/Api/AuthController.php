@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Models\RefreshToken;
 use App\Services\BrevoMailService;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cookie;
 
 class AuthController extends ApiController
 {
@@ -108,14 +111,16 @@ class AuthController extends ApiController
             // Admin Bypass: Login immediately regardless of verification
             if ($user->role === 'admin') {
                 $user->update(['last_login_at' => now()]);
-                $token = $user->createToken('admin_token')->plainTextToken;
+                
+                [$token, $cookie] = $this->issueTokens($user);
+
                 return $this->success([
                     'token' => $token,
                     'access_token' => $token,
                     'token_type' => 'Bearer',
                     'role' => 'admin',
                     'user' => $user
-                ], 'Admin Login Successful');
+                ], 'Admin Login Successful')->withCookie($cookie);
             }
 
             if (!$user->email_verified_at) {
@@ -127,7 +132,7 @@ class AuthController extends ApiController
             // We update last_login_at.
             $user->update(['last_login_at' => now()]);
 
-            $token = $user->createToken('auth_token')->plainTextToken;
+            [$token, $cookie] = $this->issueTokens($user);
 
             return $this->success([
                 'token' => $token,
@@ -135,7 +140,7 @@ class AuthController extends ApiController
                 'token_type' => 'Bearer',
                 'role' => 'user',
                 'user' => $user
-            ], 'Login successful');
+            ], 'Login successful')->withCookie($cookie);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->error("Validation failed", 422, $e->errors());
         } catch (\Exception $e) {
@@ -172,14 +177,14 @@ class AuthController extends ApiController
         }
         $user->update(['last_login_at' => now()]);
         
-        $token = $user->createToken('auth_token')->plainTextToken;
+        [$token, $cookie] = $this->issueTokens($user);
 
         return response()->json([
             'success' => true,
             'message' => 'OTP verified successfully',
             'token' => $token,
             'user' => $user,
-        ], 200);
+        ], 200)->withCookie($cookie);
     }
     
     public function resendOtp(Request $request)
@@ -208,8 +213,80 @@ class AuthController extends ApiController
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-        return $this->success([], 'Logged out');
+        $user = $request->user();
+        if ($user) {
+            $user->currentAccessToken()->delete();
+            
+            // Revoke refresh token from cookie
+            $refreshToken = $request->cookie('refresh_token');
+            if ($refreshToken) {
+                RefreshToken::where('token', hash('sha256', $refreshToken))->update(['revoked' => true]);
+            }
+        }
+
+        return $this->success([], 'Logged out')->withCookie(Cookie::forget('refresh_token'));
+    }
+
+    public function refresh(Request $request)
+    {
+        $refreshTokenStr = $request->cookie('refresh_token');
+
+        if (!$refreshTokenStr) {
+            return $this->error('Refresh token missing', 401);
+        }
+
+        $tokenRecord = RefreshToken::where('token', hash('sha256', $refreshTokenStr))
+            ->where('revoked', false)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$tokenRecord) {
+            return $this->error('Invalid or expired refresh token', 401)->withCookie(Cookie::forget('refresh_token'));
+        }
+
+        $user = $tokenRecord->user;
+        
+        // Revoke old refresh token (Token Rotation)
+        $tokenRecord->update(['revoked' => true]);
+
+        // Issue new tokens
+        [$token, $cookie] = $this->issueTokens($user);
+
+        return $this->success([
+            'token' => $token,
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $user
+        ], 'Token refreshed')->withCookie($cookie);
+    }
+
+    private function issueTokens(User $user)
+    {
+        $tokenName = $user->role === 'admin' ? 'admin_token' : 'auth_token';
+        $accessToken = $user->createToken($tokenName)->plainTextToken;
+
+        $refreshTokenStr = Str::random(64);
+        RefreshToken::create([
+            'user_id' => $user->id,
+            'token' => hash('sha256', $refreshTokenStr),
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        $cookie = cookie(
+            'refresh_token',
+            $refreshTokenStr,
+            7 * 24 * 60, // 7 days in minutes
+            '/',
+            null,
+            true, // secure
+            true, // httpOnly
+            false,
+            'None' // Using None for cross-site if needed, but 'Lax' or 'Strict' is better for stateful. 
+                   // However, standard API usage with cookies often needs 'None' if domains differ or it's a separate frontend on Render.
+                   // Actually, if it's solocart-frontend.onrender.com vs solocart-backend.onrender.com, 'None' + Secure is required.
+        );
+
+        return [$accessToken, $cookie];
     }
 
     public function user(Request $request)
